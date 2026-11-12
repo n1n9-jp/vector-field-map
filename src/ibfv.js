@@ -15,6 +15,7 @@ const CALM_HIGH = 0.2;
 // 1 回の移流で動かす距離の上限 [px]。超えるときは複数回に分け、筋が点の並びにならないようにする。
 const MAX_SHIFT = 2;
 const MAX_SUBSTEPS = 4;
+const POLAR_LAT = 75; // これより極側は、移流を分ける回数の計算に入れない
 const WARMUP_FRAMES = 20;
 const ADVECT_RATE = 8; // 粒子移流（earth-animate の stepScale）と同じ
 
@@ -56,6 +57,7 @@ export function createIbfvMethod(container) {
   let gain = null; // 画素ごとのコントラスト（静穏域では 0）
   let image = null;
   let time = 0;
+  let typicalShift = 0; // 1 秒あたりの移動 [px] の目安
   const tmp = [0, 0, 0];
 
   // 格子は地図の矩形にぴったり重ね、1 セルを画面の 1 px にする。行 0 は南端。
@@ -106,6 +108,27 @@ export function createIbfvMethod(container) {
     }
   }
 
+  // 移流を分ける回数は、いちばん速い画素の移動が MAX_SHIFT に収まるように決める。
+  // 緯度補正のある風場では、極付近だけ地図上の動きが極端に速くなるので、
+  // POLAR_LAT より極側は数えない。そこでは筋が繰り返し模様に崩れることがある。
+  function measureShift() {
+    const scale = gridW / 358;
+    let fastest = field.maxSpeed;
+    if (field.latCorrect) {
+      fastest = 0;
+      for (let j = 0; j < gridH; j += 1) {
+        const lat = (j / (gridH - 1)) * 180 - 90;
+        if (Math.abs(lat) > POLAR_LAT) continue;
+        for (let i = 0; i < gridW; i += 1) {
+          const p = j * gridW + i;
+          const s = Math.hypot(uBuf[p], vBuf[p]);
+          if (s > fastest) fastest = s;
+        }
+      }
+    }
+    typicalShift = fastest * ADVECT_RATE * scale;
+  }
+
   function reset() {
     for (let p = 0; p < curr.length; p += 1) curr[p] = phase[p] < 0.5 ? 1 : 0;
     for (let k = 0; k < WARMUP_FRAMES; k += 1) advect(1 / 60);
@@ -113,7 +136,7 @@ export function createIbfvMethod(container) {
 
   /** dt ぶん進める。移動が大きいときは複数回に分ける。 */
   function advect(dt) {
-    const shift = field.maxSpeed * dt * ADVECT_RATE * (gridW / 358);
+    const shift = typicalShift * dt;
     const steps = Math.min(MAX_SUBSTEPS, Math.max(1, Math.ceil(shift / MAX_SHIFT)));
     // 分けても、dt あたりに混ぜるノイズの量は同じにする。
     const blend = 1 - (1 - BLEND) ** (1 / steps);
@@ -171,6 +194,7 @@ export function createIbfvMethod(container) {
     const gridChanged = ensureGrid();
     if (gridChanged || baked !== field) {
       bakeField();
+      measureShift();
       reset();
       baked = field;
     }

@@ -40,8 +40,10 @@ export function createGlyphMethod(container) {
         const calm = t < CALM;
         const len = calm ? 0 : spacing * (0.3 + 0.65 * t);
         // 画面は下向きが +y なので、北向き成分の符号を反転する。
-        const ux = calm ? 0 : tmp[0] / tmp[2];
-        const uy = calm ? 0 : -tmp[1] / tmp[2];
+        // 向きは地図上の動き（緯度補正ずみ）、長さと明るさは風速で決める。
+        const norm = Math.hypot(tmp[0], tmp[1]) || 1;
+        const ux = calm ? 0 : tmp[0] / norm;
+        const uy = calm ? 0 : -tmp[1] / norm;
         arrows.push({
           x0: cx - ux * len * 0.5,
           y0: cy - uy * len * 0.5,
