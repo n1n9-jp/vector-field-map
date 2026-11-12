@@ -67,6 +67,29 @@ function saddleJet(lon, lat) {
   return [u, v];
 }
 
+// 湧き出しと吸い込み。左に風が広がる点、右に渦を巻きながら集まる点を置く。
+// どちらも、中心からの距離 r に対して r / (r² + r0²) の形の速さを持つ
+//（遠くでは 1/r で弱まる 2 次元の湧き出しを、中心で 0 になるようなめらかにしたもの）。
+function sourceSink(lon, lat) {
+  const r0 = 26; // 速さが最大になる距離 [度]
+  const poles = [
+    // [経度, 緯度, 放射方向の強さ（正が湧き出し）, 回転の強さ（正が反時計回り）]
+    [92, 6, 20, 0],
+    [266, -6, -20, 16],
+  ];
+  let u = 0;
+  let v = 0;
+  for (const [cx, cy, radial, swirl] of poles) {
+    // 遠くまで弱まりきらない流れなので、経度は巻き戻さずに度の平面の上の距離で測る。
+    const dx = lon - cx;
+    const dy = lat - cy;
+    const g = (2 * r0) / (dx * dx + dy * dy + r0 * r0); // × 距離 で、r = r0 のとき 1
+    u += g * (radial * dx - swirl * dy);
+    v += g * (radial * dy + swirl * dx);
+  }
+  return [u, v];
+}
+
 function fillFromSampler(sampler) {
   const vectors = new Float32Array(NX * NY * 3);
   const speed = new Float32Array(NX * NY);
@@ -187,6 +210,7 @@ const SAMPLERS = {
   cyclone: cycloneJet,
   gyre: doubleGyre,
   saddle: saddleJet,
+  source: sourceSink,
 };
 
 export function createSyntheticField(kind) {
@@ -195,6 +219,7 @@ export function createSyntheticField(kind) {
     cyclone: '合成・低気圧と偏西風',
     gyre: '合成・ダブルジャイア',
     saddle: '合成・鞍点とジェット',
+    source: '合成・湧き出しと吸い込み',
   };
   return wrapField(kind, fillFromSampler(sampler), labels[kind] ?? kind, '相対');
 }
