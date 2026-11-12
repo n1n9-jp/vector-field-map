@@ -46,6 +46,26 @@ function highlightPeriod(stream, pxPerDeg) {
   return HIGHLIGHT_SPACING / (pxPerDeg * median);
 }
 
+/** 閉じた輪になっている流線（始点と終点が重なる）かどうか。 */
+function findLoops(pts) {
+  return pts.map((p) => {
+    const n = p.length / 2;
+    return n > 3 && Math.hypot(p[0] - p[n * 2 - 2], p[1] - p[n * 2 - 1]) < 1;
+  });
+}
+
+/**
+ * 流線ごとのハイライトの周期。輪になっている線は、1 周がちょうど周期の整数倍になるよう
+ * 少しだけ伸び縮みさせ、つなぎ目でハイライトが途切れないようにする。
+ */
+function linePeriods(attrs, loops, period) {
+  return attrs.map((attr, li) => {
+    if (!loops[li]) return period;
+    const lap = attr.tau[attr.tau.length - 1] - attr.tau[0];
+    return lap > 0 ? lap / Math.max(1, Math.round(lap / period)) : period;
+  });
+}
+
 function clipToMap(ctx, project) {
   const [x0, y0] = project(0, 90);
   const [x1, y1] = project(358, -90);
@@ -75,13 +95,14 @@ function buildLinePaths(pts, attrs, maxSpeed) {
  * 線上を風速に比例した速さで進むハイライト。
  * classOf(li, k) が返す番号ごとに線幅を変え、明るさの段とあわせて束ねて描く。
  */
-function drawHighlights(ctx, pts, attrs, ids, time, period, classCount, classOf, styleOf) {
+function drawHighlights(ctx, pts, attrs, ids, time, periods, classCount, classOf, styleOf) {
   const paths = Array.from({ length: GLOW_LEVELS * classCount }, () => null);
   for (let li = 0; li < pts.length; li += 1) {
     const p = pts[li];
     const tau = attrs[li].tau;
     // 継ぎ目で分かれた断片も、元の流線ごとに位相をそろえる。
     const offset = 0.618 * ids[li];
+    const period = periods[li];
     let prev = -1;
     for (let k = 0; k < tau.length - 1; k += 1) {
       const phase = fract((HEAD_RATE * time - (tau[k] + tau[k + 1]) * 0.5) / period + offset);
@@ -117,7 +138,7 @@ export function createStreamlineMethod(container) {
   let attrs = [];
   let ids = [];
   let maxSpeed = 1;
-  let period = 1;
+  let periods = [];
   let time = 0;
 
   // 速さが半分以上の区間は太く明るくする。
@@ -143,7 +164,7 @@ export function createStreamlineMethod(container) {
     const { ctx } = fg;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    drawHighlights(ctx, pts, attrs, ids, time, period, 2, classOf, styleOf);
+    drawHighlights(ctx, pts, attrs, ids, time, periods, 2, classOf, styleOf);
   }
 
   return {
@@ -154,7 +175,7 @@ export function createStreamlineMethod(container) {
       attrs = stream.attrs;
       ids = stream.streamId;
       maxSpeed = Math.max(field.maxSpeed, 1e-6);
-      period = highlightPeriod(stream, project.scale());
+      periods = linePeriods(attrs, findLoops(pts), highlightPeriod(stream, project.scale()));
       time = 0;
       drawBackground();
       drawForeground();
@@ -181,7 +202,7 @@ export function createTubeMethod(container) {
   let ribbon = null; // 流管全体の形。ハイライトをこの中に収める。
   let widths = [];
   let maxSpeed = 1;
-  let period = 1;
+  let periods = [];
   let time = 0;
 
   const classOf = (li, k) => {
@@ -270,7 +291,7 @@ export function createTubeMethod(container) {
     ctx.clip(ribbon);
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'round';
-    drawHighlights(ctx, pts, attrs, ids, time, period, TUBE_WIDTH_STEPS.length, classOf, styleOf);
+    drawHighlights(ctx, pts, attrs, ids, time, periods, TUBE_WIDTH_STEPS.length, classOf, styleOf);
     ctx.restore();
   }
 
@@ -284,7 +305,7 @@ export function createTubeMethod(container) {
       maxSpeed = Math.max(field.maxSpeed, 1e-6);
       widths = computeWidths(stream);
       // 流線のハイライトより間隔を広くして、ゆったりした波にする。
-      period = highlightPeriod(stream, project.scale()) * 1.6;
+      periods = linePeriods(attrs, findLoops(pts), highlightPeriod(stream, project.scale()) * 1.6);
       time = 0;
       drawBackground();
       drawForeground();
@@ -309,6 +330,7 @@ export function createStreamletMethod(container) {
   let pts = [];
   let attrs = [];
   let maxSpeed = 1;
+  let loops = [];
   let cumulative = [];
   let cursors = [];
 
@@ -357,7 +379,12 @@ export function createStreamletMethod(container) {
       c.tau += HEAD_RATE * dt;
       c.age += 1;
       let tau = attrs[c.li].tau;
-      if (c.age > STREAMLET_MAX_AGE || c.tau >= tau[tau.length - 1]) {
+      const end = tau[tau.length - 1];
+      if (c.age <= STREAMLET_MAX_AGE && c.tau >= end && loops[c.li]) {
+        // 輪になっている線は、端まで来たら始点へ戻って回り続ける。
+        c.tau = tau[0] + ((c.tau - end) % (end - tau[0]));
+        c.k = 0;
+      } else if (c.age > STREAMLET_MAX_AGE || c.tau >= end) {
         respawn(c);
         tau = attrs[c.li].tau;
       }
@@ -403,6 +430,7 @@ export function createStreamletMethod(container) {
       layer.clear();
       pts = projectLines(stream, project);
       attrs = stream.attrs;
+      loops = findLoops(pts);
       maxSpeed = Math.max(field.maxSpeed, 1e-6);
       seed();
     },

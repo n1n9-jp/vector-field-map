@@ -39,8 +39,11 @@ function cycloneJet(lon, lat) {
   return [u, v];
 }
 
+// ダブルジャイア（Shadden ほか 2005 の試験用の流れ）を、ある瞬間で止めたもの。
+// 標準の定義域は横 0〜2・縦 0〜1 で、逆向きに回る 2 つの渦が横に並ぶ。
+// 経度 0〜360° を横 0〜2 に、緯度 −90〜90° を縦 0〜1 に写す。
 function doubleGyre(lon, lat) {
-  const x = lon / 360;
+  const x = lon / 180;
   const y = (lat + 90) / 180;
   const a = 0.1;
   const e = 0.25;
@@ -48,8 +51,10 @@ function doubleGyre(lon, lat) {
   const n = Math.sin(t);
   const f = e * n * x * x + (1 - 2 * e * n) * x;
   const df = 2 * e * n * x + (1 - 2 * e * n);
-  const u = -Math.PI * a * Math.sin(Math.PI * f) * Math.cos(Math.PI * y) * 40;
-  const v = Math.PI * a * Math.cos(Math.PI * f) * Math.sin(Math.PI * y) * df * 80;
+  // 横も縦も 1 単位が 180° なので、同じ倍率で度の平面の速さに直す。
+  const scale = 80;
+  const u = -Math.PI * a * Math.sin(Math.PI * f) * Math.cos(Math.PI * y) * scale;
+  const v = Math.PI * a * Math.cos(Math.PI * f) * Math.sin(Math.PI * y) * df * scale;
   return [u, v];
 }
 
