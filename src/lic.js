@@ -100,7 +100,8 @@ export function createLicMethod(container) {
         sampleField(field, lon, lat, tmp);
         const [r, g, b] = speedToRgb(tmp[2] / maxS);
         const lic = 0.16 + 0.84 * curr[p];
-        const q = p * 4;
+        // 格子の行 0 は南緯 90°。画像は上が北なので、書き込む行を上下反転する。
+        const q = ((gridH - 1 - j) * gridW + i) * 4;
         data[q] = Math.round(r * lic * 255);
         data[q + 1] = Math.round(g * lic * 255);
         data[q + 2] = Math.round(b * lic * 255);

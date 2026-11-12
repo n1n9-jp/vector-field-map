@@ -30,8 +30,9 @@ export function createCanvasLayer(container, className = 'flow-layer') {
 
   function fade(amount = 0.06) {
     const prev = ctx.globalCompositeOperation;
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = `rgba(0, 0, 0, ${amount})`;
+    // 既存の画素のアルファを減衰させる（earth と同じ）。キャンバスは透明のまま保たれる。
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.fillStyle = `rgba(0, 0, 0, ${1 - amount})`;
     ctx.fillRect(0, 0, width, height);
     ctx.globalCompositeOperation = prev;
   }
