@@ -28,11 +28,19 @@ export function createCanvasLayer(container, className = 'flow-layer') {
     ctx.clearRect(0, 0, width, height);
   }
 
+  // フェードは 8 bit のアルファへの掛け算なので、減衰が小さいと薄い画素が丸めで減らなくなり、
+  // もやとして残る。数フレームぶんをまとめて掛け、残るアルファを 2/255 以下に抑える。
+  const FADE_EVERY = 3;
+  let fadeCount = 0;
+
   function fade(amount = 0.06) {
+    fadeCount += 1;
+    if (fadeCount % FADE_EVERY !== 0) return;
+    const keep = (1 - amount) ** FADE_EVERY;
     const prev = ctx.globalCompositeOperation;
     // 既存の画素のアルファを減衰させる（earth と同じ）。キャンバスは透明のまま保たれる。
     ctx.globalCompositeOperation = 'destination-in';
-    ctx.fillStyle = `rgba(0, 0, 0, ${1 - amount})`;
+    ctx.fillStyle = `rgba(0, 0, 0, ${keep})`;
     ctx.fillRect(0, 0, width, height);
     ctx.globalCompositeOperation = prev;
   }
