@@ -410,5 +410,9 @@ export function createStreamletMethod(container) {
       if (!cursors.length) return;
       step(dt);
     },
+    settle(frames, dt) {
+      if (!cursors.length) return;
+      for (let k = 0; k < frames; k += 1) step(dt);
+    },
   };
 }
