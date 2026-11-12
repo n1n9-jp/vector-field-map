@@ -1,12 +1,9 @@
-import vtkPolyData from '@kitware/vtk.js/Common/DataModel/PolyData';
-import vtkDataArray from '@kitware/vtk.js/Common/Core/DataArray';
-import { seedGrid, sampleField, stepRK2 } from './field';
+import { seedGrid, stepRK2 } from './field';
 
 const STREAM_STEP = 0.4;
 
 function trace(field, x0, y0, dt, maxSteps) {
   const pts = [];
-  const spd = [];
   let x = x0;
   let y = y0;
   const tmp = [0, 0, 0];
@@ -16,64 +13,38 @@ function trace(field, x0, y0, dt, maxSteps) {
     x = next[0];
     y = next[1];
     pts.push(x, y, 0);
-    spd.push(next[2]);
   }
-  return { pts, spd };
+  return pts;
 }
 
-function integrateOnCpu(field) {
+/**
+ * 種点から前後に積分した流線。
+ * 戻り値は流線ごとの Float32Array（x, y, 0 の 3 つ組の並び）の配列。
+ */
+export function computeStreamlines(field) {
   const seeds = seedGrid(20, 12, 1.8);
   const nSeeds = seeds.length / 3;
-  const polylines = [];
-  const tmp = [0, 0, 0];
+  const lines = [];
 
   for (let s = 0; s < nSeeds; s += 1) {
     const x0 = seeds[s * 3];
     const y0 = seeds[s * 3 + 1];
-    sampleField(field, x0, y0, tmp);
     const fwd = trace(field, x0, y0, STREAM_STEP, 110);
     const bwd = trace(field, x0, y0, -STREAM_STEP, 110);
-    const pts = [];
-    const spd = [];
-    for (let i = bwd.spd.length - 1; i >= 0; i -= 1) {
-      pts.push(bwd.pts[i * 3], bwd.pts[i * 3 + 1], 0);
-      spd.push(bwd.spd[i]);
+    const npts = bwd.length / 3 + 1 + fwd.length / 3;
+    if (npts < 12) continue;
+    const line = new Float32Array(npts * 3);
+    let w = 0;
+    for (let i = bwd.length / 3 - 1; i >= 0; i -= 1) {
+      line[w] = bwd[i * 3];
+      line[w + 1] = bwd[i * 3 + 1];
+      w += 3;
     }
-    pts.push(x0, y0, 0);
-    spd.push(tmp[2]);
-    for (let i = 0; i < fwd.spd.length; i += 1) {
-      pts.push(fwd.pts[i * 3], fwd.pts[i * 3 + 1], 0);
-      spd.push(fwd.spd[i]);
-    }
-    if (spd.length >= 12) polylines.push({ pts, spd });
+    line[w] = x0;
+    line[w + 1] = y0;
+    w += 3;
+    line.set(fwd, w);
+    lines.push(line);
   }
-
-  let npts = 0;
-  for (const line of polylines) npts += line.spd.length;
-  const points = new Float32Array(npts * 3);
-  const speed = new Float32Array(npts);
-  const cells = [];
-  let w = 0;
-  for (const line of polylines) {
-    const n = line.spd.length;
-    cells.push(n);
-    for (let i = 0; i < n; i += 1) {
-      points[w * 3] = line.pts[i * 3];
-      points[w * 3 + 1] = line.pts[i * 3 + 1];
-      points[w * 3 + 2] = 0;
-      speed[w] = line.spd[i];
-      cells.push(w);
-      w += 1;
-    }
-  }
-
-  const pd = vtkPolyData.newInstance();
-  pd.getPoints().setData(points, 3);
-  pd.getLines().setData(Uint32Array.from(cells));
-  pd.getPointData().setScalars(vtkDataArray.newInstance({ name: 'speed', values: speed }));
-  return pd;
-}
-
-export function computeStreamlines(field) {
-  return integrateOnCpu(field);
+  return lines;
 }

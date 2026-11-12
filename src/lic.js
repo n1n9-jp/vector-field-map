@@ -23,9 +23,9 @@ function sampleBuf(buf, w, h, x, y) {
   return (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
 }
 
-export function createLicMethod(container, getRenderer) {
+export function createLicMethod(container) {
   const layer = createCanvasLayer(container, 'flow-layer');
-  let project = null;
+  const project = createProjector(layer);
   let field = null;
   let gridW = 0;
   let gridH = 0;
@@ -87,7 +87,7 @@ export function createLicMethod(container, getRenderer) {
   }
 
   function paint() {
-    if (!field || !project) return;
+    if (!field) return;
     const { ctx, width, height } = layer;
     const maxS = Math.max(field.maxSpeed, 1e-6);
     const img = ctx.createImageData(gridW, gridH);
@@ -129,8 +129,6 @@ export function createLicMethod(container, getRenderer) {
   return {
     setField(nextField) {
       field = nextField;
-      project = createProjector(getRenderer(), container);
-      project.sync();
       ensureGrid();
       bakeField();
       for (let i = 0; i < curr.length; i += 1) curr[i] = noise[i];
@@ -139,8 +137,6 @@ export function createLicMethod(container, getRenderer) {
     },
     resize() {
       if (!field) return;
-      project = createProjector(getRenderer(), container);
-      project.sync();
       ensureGrid();
       bakeField();
       for (let i = 0; i < curr.length; i += 1) curr[i] = noise[i];

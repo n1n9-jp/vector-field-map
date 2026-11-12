@@ -9,9 +9,6 @@
     "preview": "vite preview",
     "preview:pages": "GITHUB_PAGES=1 npm run build && vite preview --base /vector-field-map/"
   },
-  "dependencies": {
-    "@kitware/vtk.js": "^34.12.1"
-  },
   "devDependencies": {
     "vite": "^5.4.11"
   }

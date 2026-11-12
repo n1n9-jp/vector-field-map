@@ -1,6 +1,3 @@
-import vtkDataArray from '@kitware/vtk.js/Common/Core/DataArray';
-import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
-
 export const NX = 180;
 export const NY = 91;
 export const ORIGIN = [0, -90, 0];
@@ -109,32 +106,6 @@ function fillFromGfs(json) {
   return { vectors, speed, maxSpeed };
 }
 
-function toImage(vectors, speed) {
-  const n = NX * NY;
-  const vec3 = new Float32Array(n * 2 * 3);
-  const mag3 = new Float32Array(n * 2);
-  vec3.set(vectors);
-  vec3.set(vectors, n * 3);
-  mag3.set(speed);
-  mag3.set(speed, n);
-
-  const image = vtkImageData.newInstance();
-  image.setOrigin(ORIGIN[0], ORIGIN[1], -0.5);
-  image.setSpacing(SPACING[0], SPACING[1], 1);
-  image.setExtent(0, NX - 1, 0, NY - 1, 0, 1);
-  image.getPointData().setVectors(
-    vtkDataArray.newInstance({
-      name: 'vectors',
-      numberOfComponents: 3,
-      values: vec3,
-    })
-  );
-  image.getPointData().setScalars(
-    vtkDataArray.newInstance({ name: 'speed', values: mag3 })
-  );
-  return image;
-}
-
 export function sampleField(field, x, y, out) {
   const fx = (x - ORIGIN[0]) / SPACING[0];
   const fy = (y - ORIGIN[1]) / SPACING[1];
@@ -174,7 +145,6 @@ export function stepRK2(field, x, y, dt, tmp) {
 }
 
 function wrapField(kind, packed, label, unit) {
-  const image = toImage(packed.vectors, packed.speed);
   const advectionScale = 1.15 / Math.max(packed.maxSpeed, 1e-6);
   return {
     kind,
@@ -187,7 +157,6 @@ function wrapField(kind, packed, label, unit) {
     vectors: packed.vectors,
     speed: packed.speed,
     maxSpeed: packed.maxSpeed,
-    image,
     advectionScale,
     bounds: [0, 358, -90, 90, 0, 0],
   };

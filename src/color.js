@@ -62,12 +62,3 @@ export function ageEnvelope(age, maxAge, fadeIn = 10, fadeOut = 16) {
   const b = Math.max(0, Math.min(1, (maxAge - age) / fadeOut));
   return a * a * (3 - 2 * a) * (b * b * (3 - 2 * b));
 }
-
-export function applyWindLut(lut, maxSpeed) {
-  lut.removeAllPoints();
-  const m = Math.max(maxSpeed, 1e-6);
-  for (const [t, r, g, b] of WIND_STOPS) {
-    lut.addRGBPoint(t * m, r, g, b);
-  }
-  lut.setMappingRange(0, m);
-}

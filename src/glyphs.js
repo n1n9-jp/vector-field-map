@@ -1,36 +1,31 @@
 import { createCanvasLayer, createProjector } from './canvas-layer';
 import { createEarthFieldAnimator, drawArrowSegment } from './earth-animate';
 
-export function createGlyphMethod(container, getRenderer) {
+export function createGlyphMethod(container) {
   const layer = createCanvasLayer(container, 'flow-layer');
-  let animator = null;
+  const project = createProjector(layer);
+  const animator = createEarthFieldAnimator(layer, project, {
+    multiplier: 4.2,
+    lineWidth: 1.1,
+    drawSegment: drawArrowSegment,
+  });
+  let hasField = false;
   let density = 1;
-
-  function bind() {
-    const project = createProjector(getRenderer(), container);
-    project.sync();
-    animator = createEarthFieldAnimator(layer, project, {
-      multiplier: 4.2,
-      lineWidth: 1.1,
-      drawSegment: drawArrowSegment,
-    });
-  }
 
   return {
     setField(next, d = 1) {
       density = d;
+      hasField = true;
       layer.resize();
-      bind();
       animator.setField(next, d);
     },
     resize() {
-      if (!animator) return;
+      if (!hasField) return;
       layer.resize();
-      bind();
       animator.resize(density);
     },
     update(dt) {
-      animator?.update(dt);
+      animator.update(dt);
     },
   };
 }

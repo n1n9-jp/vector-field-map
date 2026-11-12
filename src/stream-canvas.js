@@ -1,5 +1,4 @@
 import { createCanvasLayer, createProjector, inView } from './canvas-layer';
-import { parsePolylines } from './polyline';
 import { createWindColorStyles, flowComet, windGrayAlpha } from './color';
 import { sampleField } from './field';
 
@@ -104,17 +103,17 @@ function drawFilledTubes(ctx, lines, speeds, project, maxS, time) {
   ctx.restore();
 }
 
-export function createStreamlineMethod(container, getRenderer) {
+export function createStreamlineMethod(container) {
   const bg = createCanvasLayer(container, 'flow-bg');
   const fg = createCanvasLayer(container, 'flow-layer');
-  let project = null;
+  const project = createProjector(fg);
   let lines = [];
   let speeds = [];
   let field = null;
   let time = 0;
 
   function redrawBg() {
-    if (!field || !lines.length || !project) return;
+    if (!field || !lines.length) return;
     bg.resize();
     bg.clear();
     drawSegmentColoredLines(bg.ctx, lines, speeds, project, field.maxSpeed, {
@@ -124,28 +123,24 @@ export function createStreamlineMethod(container, getRenderer) {
   }
 
   function redrawFg() {
-    if (!field || !lines.length || !project) return;
+    if (!field || !lines.length) return;
     fg.clear();
     drawCometHighlights(fg.ctx, lines, speeds, project, field.maxSpeed, time);
   }
 
   return {
-    setField(next, _d, streamPd) {
+    setField(next, _d, streamLines) {
       field = next;
-      lines = parsePolylines(streamPd);
+      lines = streamLines;
       speeds = lineSpeeds(lines, next);
       time = 0;
       fg.resize();
-      project = createProjector(getRenderer(), container);
-      project.sync();
       redrawBg();
       redrawFg();
     },
     resize() {
       if (!field) return;
       fg.resize();
-      project = createProjector(getRenderer(), container);
-      project.sync();
       redrawBg();
       redrawFg();
     },
@@ -157,36 +152,32 @@ export function createStreamlineMethod(container, getRenderer) {
   };
 }
 
-export function createTubeMethod(container, getRenderer) {
+export function createTubeMethod(container) {
   const layer = createCanvasLayer(container, 'flow-layer');
-  let project = null;
+  const project = createProjector(layer);
   let lines = [];
   let speeds = [];
   let field = null;
   let time = 0;
 
   function redraw() {
-    if (!field || !lines.length || !project) return;
+    if (!field || !lines.length) return;
     layer.clear();
     drawFilledTubes(layer.ctx, lines, speeds, project, field.maxSpeed, time);
   }
 
   return {
-    setField(next, _d, streamPd) {
+    setField(next, _d, streamLines) {
       field = next;
-      lines = parsePolylines(streamPd);
+      lines = streamLines;
       speeds = lineSpeeds(lines, next);
       time = 0;
       layer.resize();
-      project = createProjector(getRenderer(), container);
-      project.sync();
       redraw();
     },
     resize() {
       if (!field) return;
       layer.resize();
-      project = createProjector(getRenderer(), container);
-      project.sync();
       redraw();
     },
     update(dt) {
@@ -197,9 +188,9 @@ export function createTubeMethod(container, getRenderer) {
   };
 }
 
-export function createStreamletMethod(container, getRenderer) {
+export function createStreamletMethod(container) {
   const layer = createCanvasLayer(container, 'flow-layer');
-  let project = null;
+  const project = createProjector(layer);
   let lines = [];
   let cursors = [];
   let field = null;
@@ -278,14 +269,12 @@ export function createStreamletMethod(container, getRenderer) {
   }
 
   return {
-    setField(next, density, streamPd) {
+    setField(next, density, streamLines) {
       field = next;
-      lines = parsePolylines(streamPd);
+      lines = streamLines;
       if (!lines.length) return;
       layer.resize();
       layer.clear();
-      project = createProjector(getRenderer(), container);
-      project.sync();
       const intensity = Math.max(next.maxSpeed * 0.82, 1);
       colors = createWindColorStyles(8, intensity);
       buckets = colors.styles.map(() => []);
@@ -295,8 +284,6 @@ export function createStreamletMethod(container, getRenderer) {
       if (!field || !lines.length) return;
       layer.resize();
       layer.clear();
-      project = createProjector(getRenderer(), container);
-      project.sync();
       seed(1);
     },
     update(dt) {
