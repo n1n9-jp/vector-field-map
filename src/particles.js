@@ -1,36 +1,30 @@
 import { createCanvasLayer, createProjector } from './canvas-layer';
 import { createEarthFieldAnimator } from './earth-animate';
 
-export function createParticleMethod(container, getRenderer) {
+export function createParticleMethod(container) {
   const layer = createCanvasLayer(container, 'flow-layer');
-  let animator = null;
+  const project = createProjector(layer);
+  const animator = createEarthFieldAnimator(layer, project, {
+    multiplier: 7.5,
+    lineWidth: 1.05,
+  });
+  let hasField = false;
   let density = 1;
-  let project = null;
-
-  function bind() {
-    project = createProjector(getRenderer(), container);
-    project.sync();
-    animator = createEarthFieldAnimator(layer, project, {
-      multiplier: 7.5,
-      lineWidth: 1.05,
-    });
-  }
 
   return {
     setField(next, d = 1) {
       density = d;
+      hasField = true;
       layer.resize();
-      bind();
       animator.setField(next, d);
     },
     resize() {
-      if (!animator) return;
+      if (!hasField) return;
       layer.resize();
-      bind();
       animator.resize(density);
     },
     update(dt) {
-      animator?.update(dt);
+      animator.update(dt);
     },
   };
 }

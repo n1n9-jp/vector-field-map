@@ -1,6 +1,9 @@
 import { createAtlas } from './view';
 import { createGfsField, createSyntheticField } from './field';
 
+// 既定の風場。取得はページの初期化と並行して進める。
+const gfsRequest = fetch(`${import.meta.env.BASE_URL}data/gfs-20140131-2deg.json`).then((r) => r.json());
+
 const presetEl = document.getElementById('preset');
 const toggleEl = document.getElementById('toggle');
 const speedEl = document.getElementById('speed');
@@ -20,7 +23,7 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
 let playing = !reduceMotion;
 let speed = 1;
 let density = 1;
-let field = createSyntheticField('cyclone');
+let field = null;
 let gfsField = null;
 let last = performance.now();
 
@@ -57,7 +60,7 @@ speedEl.addEventListener('input', () => {
 
 densityEl.addEventListener('input', () => {
   density = Number(densityEl.value);
-  atlas.setField(field, density);
+  if (field) atlas.setField(field, density);
 });
 
 presetEl.addEventListener('change', () => {
@@ -69,20 +72,19 @@ function frame(now) {
   last = now;
   if (!document.hidden) {
     if (playing) atlas.update(dt);
-    atlas.render();
   }
   requestAnimationFrame(frame);
 }
 
-applyField(field);
+// 既定の GFS が選ばれているあいだは、届いてから 1 回だけ描く。
+if (presetEl.value !== 'gfs') applyField(currentPreset());
 requestAnimationFrame(frame);
 
-fetch(`${import.meta.env.BASE_URL}data/gfs-20140131-2deg.json`)
-  .then((r) => r.json())
+gfsRequest
   .then((json) => {
     gfsField = createGfsField(json);
     if (presetEl.value === 'gfs') applyField(gfsField);
-    else statusEl.textContent = `${field.label}  / GFS 読み込み済`;
+    else if (field) statusEl.textContent = `${field.label}  / GFS 読み込み済`;
   })
   .catch(() => {
     if (presetEl.value === 'gfs') {

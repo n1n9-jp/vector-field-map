@@ -34,9 +34,7 @@
         <h1>風の描き方</h1>
         <p class="lede">
           <a href="https://earth.nullschool.net" target="_blank" rel="noreferrer">earth.nullschool.net</a>
-          の粒子移流と、
-          <a href="https://github.com/Kitware/vtk-js" target="_blank" rel="noreferrer">vtk.js</a>
-          の流線・LIC・グリフなどを、同じ風場の上で同時に比較する。
+          の粒子移流と、流線・LIC・グリフなどを、同じ風場の上で同時に比較する。
         </p>
 
         <div class="toolbar">
@@ -76,7 +74,7 @@
           <p class="en">Streamlines</p>
           <div class="viewport" id="view-streamlines" data-panel="streamlines"></div>
           <p class="caption">
-            風場を積分した流線を速さで着色。線上を彗星状のハイライトが流れる。
+            風場を積分した流線。明るいほど速い。線上を彗星状のハイライトが流れる。
           </p>
         </article>
         <article class="plate">
@@ -100,7 +98,7 @@
           <p class="en">Line integral convolution</p>
           <div class="viewport" id="view-lic" data-panel="lic"></div>
           <p class="caption">
-            画面解像度の IBFV。VTK 平面より細かい筋目が流れる。
+            画面解像度の IBFV。細かい筋目が流れる。
           </p>
         </article>
         <article class="plate">
@@ -123,7 +121,7 @@
         <p>
           風場の既定は
           <a href="https://github.com/cambecc/earth" target="_blank" rel="noreferrer">cambecc/earth</a>
-          付属の GFS 1° を 2° に間引いたもの。色は速さ。パネルはカメラを共有する。
+          付属の GFS 1° を 2° に間引いたもの。色の凡例は LIC のもので、ほかのパネルは明るいほど速い。
         </p>
       </footer>
     </div>

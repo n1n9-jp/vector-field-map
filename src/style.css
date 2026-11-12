@@ -158,7 +158,6 @@ input[type="range"] {
   min-height: 220px;
   border-top: 1px solid var(--ink);
   border-bottom: 1px solid var(--ink);
-  cursor: grab;
 }
 
 .viewport canvas {
@@ -167,6 +166,7 @@ input[type="range"] {
   height: 100%;
 }
 
+.flow-frame,
 .flow-bg,
 .flow-layer {
   position: absolute;
@@ -175,16 +175,16 @@ input[type="range"] {
   pointer-events: none;
 }
 
+.flow-frame {
+  z-index: 0;
+}
+
 .flow-bg {
   z-index: 1;
 }
 
 .flow-layer {
   z-index: 2;
-}
-
-.viewport:active {
-  cursor: grabbing;
 }
 
 .caption {

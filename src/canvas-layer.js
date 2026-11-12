@@ -1,8 +1,8 @@
-import vtkCoordinate from '@kitware/vtk.js/Rendering/Core/Coordinate';
-
-function vtkCanvasEl(container) {
-  return container?.querySelector(':scope > canvas:not(.flow-layer):not(.flow-bg)');
-}
+// 画面に収める範囲（度）。地図（経度 0〜358、緯度 −90〜90）の周囲に余白を残す。
+const VIEW_WIDTH = 388.8;
+const VIEW_HEIGHT = 216;
+const CENTER_LON = 179;
+const CENTER_LAT = 0;
 
 export function createCanvasLayer(container, className = 'flow-layer') {
   const canvas = document.createElement('canvas');
@@ -14,21 +14,11 @@ export function createCanvasLayer(container, className = 'flow-layer') {
   let dpr = 1;
 
   function resize() {
-    const vtkCanvas = vtkCanvasEl(container);
-    if (vtkCanvas?.clientWidth > 0 && vtkCanvas.clientHeight > 0) {
-      canvas.width = vtkCanvas.width;
-      canvas.height = vtkCanvas.height;
-      width = vtkCanvas.clientWidth;
-      height = vtkCanvas.clientHeight;
-      dpr = canvas.width / width;
-    } else {
-      const rect = container.getBoundingClientRect();
-      dpr = window.devicePixelRatio || 1;
-      width = Math.max(1, rect.width);
-      height = Math.max(1, rect.height);
-      canvas.width = Math.max(1, Math.floor(width * dpr));
-      canvas.height = Math.max(1, Math.floor(height * dpr));
-    }
+    dpr = window.devicePixelRatio || 1;
+    width = Math.max(1, container.clientWidth);
+    height = Math.max(1, container.clientHeight);
+    canvas.width = Math.max(1, Math.round(width * dpr));
+    canvas.height = Math.max(1, Math.round(height * dpr));
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -64,36 +54,29 @@ export function createCanvasLayer(container, className = 'flow-layer') {
   };
 }
 
-export function createProjector(renderer, container) {
-  const coord = vtkCoordinate.newInstance();
-  coord.setCoordinateSystemToWorld();
+/**
+ * 経度・緯度 → レイヤー上の位置（CSS ピクセル）。北が上の正距円筒図法。
+ * 係数はレイヤーの寸法が変わったときだけ求め直す。
+ */
+export function createProjector(layer) {
+  let width = -1;
+  let height = -1;
+  let scale = 1;
+  let originX = 0;
+  let originY = 0;
 
-  function ratios() {
-    const vtkCanvas = vtkCanvasEl(container);
-    if (vtkCanvas?.clientWidth > 0 && vtkCanvas.clientHeight > 0) {
-      return {
-        x: vtkCanvas.width / vtkCanvas.clientWidth,
-        y: vtkCanvas.height / vtkCanvas.clientHeight,
-      };
-    }
-    const view = renderer.getRenderWindow().getViews()[0];
-    const r = view.getComputedDevicePixelRatio();
-    return { x: r, y: r };
+  function refresh() {
+    width = layer.width;
+    height = layer.height;
+    scale = Math.min(width / VIEW_WIDTH, height / VIEW_HEIGHT);
+    originX = width / 2 - CENTER_LON * scale;
+    originY = height / 2 + CENTER_LAT * scale;
   }
 
-  function sync() {
-    renderer.getRenderWindow().render();
-  }
-
-  function project(lon, lat) {
-    coord.setValue(lon, lat, 0);
-    const d = coord.getComputedLocalDisplayValue(renderer);
-    const r = ratios();
-    return [d[0] / r.x, d[1] / r.y];
-  }
-
-  project.sync = sync;
-  return project;
+  return function project(lon, lat) {
+    if (layer.width !== width || layer.height !== height) refresh();
+    return [originX + lon * scale, originY - lat * scale];
+  };
 }
 
 export function inView(x, y, w, h, pad = 16) {

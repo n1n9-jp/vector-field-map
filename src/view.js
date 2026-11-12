@@ -1,14 +1,4 @@
-import '@kitware/vtk.js/Rendering/Profiles/Geometry';
-import '@kitware/vtk.js/Rendering/Misc/RenderingAPIs';
-
-import vtkGenericRenderWindow from '@kitware/vtk.js/Rendering/Misc/GenericRenderWindow';
-import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
-import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
-import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
-import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
-import vtkOutlineFilter from '@kitware/vtk.js/Filters/General/OutlineFilter';
-
-import { applyWindLut } from './color';
+import { createCanvasLayer, createProjector } from './canvas-layer';
 import { createParticleMethod } from './particles';
 import { computeStreamlines } from './stream';
 import {
@@ -19,122 +9,116 @@ import {
 import { createGlyphMethod } from './glyphs';
 import { createLicMethod } from './lic';
 
-const BG = [0.043, 0.063, 0.086];
-const PANEL_IDS = ['particles', 'streamlines', 'tubes', 'glyphs', 'lic', 'streamlets'];
+const FRAME_COLOR = 'rgb(71, 82, 97)';
+
+const PANELS = [
+  ['particles', createParticleMethod],
+  ['streamlines', createStreamlineMethod],
+  ['tubes', createTubeMethod],
+  ['glyphs', createGlyphMethod],
+  ['lic', createLicMethod],
+  ['streamlets', createStreamletMethod],
+];
+
+/** 風場の範囲を示す外枠。各パネルの最背面に置く。 */
+function createFrame(container) {
+  const layer = createCanvasLayer(container, 'flow-frame');
+  const project = createProjector(layer);
+  return {
+    resize() {
+      layer.resize();
+      layer.clear();
+      const [x0, y0] = project(0, 90);
+      const [x1, y1] = project(358, -90);
+      const { ctx } = layer;
+      ctx.strokeStyle = FRAME_COLOR;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(
+        Math.round(x0) + 0.5,
+        Math.round(y0) + 0.5,
+        Math.round(x1 - x0),
+        Math.round(y1 - y0)
+      );
+    },
+  };
+}
 
 export function createAtlas() {
-  const camera = vtkCamera.newInstance();
-  camera.setParallelProjection(true);
-  camera.setFocalPoint(179, 0, 0);
-  camera.setPosition(179, -28, 260);
-  camera.setViewUp(0, 1, 0);
-  camera.setParallelScale(108);
-
-  const lut = vtkColorTransferFunction.newInstance();
-  const windows = [];
-  const renderers = {};
+  const atlasEl = document.querySelector('.atlas');
+  const frames = [];
   const methods = {};
-  const outlines = [];
-  const canvasMethods = [];
 
-  for (const id of PANEL_IDS) {
+  for (const [id, createMethod] of PANELS) {
     const el = document.getElementById(`view-${id}`);
-    const grw = vtkGenericRenderWindow.newInstance({ background: BG, listenWindowResize: true });
-    grw.setContainer(el);
-    const renderer = grw.getRenderer();
-    renderer.setActiveCamera(camera);
-    renderer.setBackground(...BG);
-    windows.push(grw);
-    renderers[id] = renderer;
-
-    const outline = vtkOutlineFilter.newInstance();
-    const mapper = vtkMapper.newInstance();
-    mapper.setInputConnection(outline.getOutputPort());
-    const actor = vtkActor.newInstance();
-    actor.setMapper(mapper);
-    actor.getProperty().setColor(0.28, 0.32, 0.38);
-    actor.getProperty().setLineWidth(1);
-    renderer.addActor(actor);
-    outlines.push(outline);
+    frames.push(createFrame(el));
+    methods[id] = createMethod(el);
   }
+  // 風場が届く前から外枠を見せておく。
+  for (const frame of frames) frame.resize();
 
-  const getRenderer = (id) => () => renderers[id];
-
-  methods.particles = createParticleMethod(
-    document.getElementById('view-particles'),
-    getRenderer('particles')
-  );
-  methods.streamlines = createStreamlineMethod(
-    document.getElementById('view-streamlines'),
-    getRenderer('streamlines')
-  );
-  methods.tubes = createTubeMethod(
-    document.getElementById('view-tubes'),
-    getRenderer('tubes')
-  );
-  methods.glyphs = createGlyphMethod(
-    document.getElementById('view-glyphs'),
-    getRenderer('glyphs')
-  );
-  methods.lic = createLicMethod(
-    document.getElementById('view-lic'),
-    getRenderer('lic')
-  );
-  methods.streamlets = createStreamletMethod(
-    document.getElementById('view-streamlets'),
-    getRenderer('streamlets')
-  );
-
-  canvasMethods.push(
-    methods.particles,
-    methods.streamlines,
-    methods.tubes,
-    methods.glyphs,
-    methods.lic,
-    methods.streamlets
-  );
+  let hasField = false;
+  let lastWidth = 0;
+  let lastHeight = 0;
 
   function resize() {
-    for (const grw of windows) grw.resize();
-    for (const method of canvasMethods) method.resize?.();
+    for (const frame of frames) frame.resize();
+    for (const [id] of PANELS) methods[id].resize?.();
   }
 
-  new ResizeObserver(resize).observe(document.querySelector('.atlas'));
+  // 寸法と解像度の変化が同時に来ても、描き直しは 1 フレームに 1 回にまとめる。
+  let resizePending = false;
+  function scheduleResize() {
+    if (!hasField || resizePending) return;
+    resizePending = true;
+    requestAnimationFrame(() => {
+      resizePending = false;
+      resize();
+    });
+  }
+
+  // 初回の通知や寸法が変わらない通知では、描き直さない。
+  new ResizeObserver(() => {
+    const width = atlasEl.clientWidth;
+    const height = atlasEl.clientHeight;
+    if (width === lastWidth && height === lastHeight) return;
+    lastWidth = width;
+    lastHeight = height;
+    scheduleResize();
+  }).observe(atlasEl);
+
+  // ブラウザのズームなどで、寸法は同じまま解像度だけが変わったときも作り直す。
+  function watchPixelRatio() {
+    const query = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    query.addEventListener(
+      'change',
+      () => {
+        watchPixelRatio();
+        scheduleResize();
+      },
+      { once: true }
+    );
+  }
+  watchPixelRatio();
 
   return {
-    lut,
     methods,
-    outlines,
     resize,
-    render() {
-      for (const grw of windows) {
-        try {
-          grw.getRenderWindow().render();
-        } catch (err) {
-          console.warn('render skipped', err.message);
-        }
-      }
-    },
     setField(field, density) {
-      applyWindLut(lut, field.maxSpeed);
-      for (const grw of windows) grw.resize();
-      for (const grw of windows) grw.getRenderWindow().render();
-      const streamPd = computeStreamlines(field);
-      for (const outline of outlines) outline.setInputData(field.image);
+      lastWidth = atlasEl.clientWidth;
+      lastHeight = atlasEl.clientHeight;
+      hasField = true;
+      for (const frame of frames) frame.resize();
+      const streamLines = computeStreamlines(field);
       methods.particles.setField(field, density);
-      methods.streamlines.setField(field, density, streamPd);
-      methods.tubes.setField(field, density, streamPd);
+      methods.streamlines.setField(field, density, streamLines);
+      methods.tubes.setField(field, density, streamLines);
       methods.glyphs.setField(field, density);
       methods.lic.setField(field, density);
-      methods.streamlets.setField(field, density, streamPd);
+      methods.streamlets.setField(field, density, streamLines);
     },
     update(dt) {
-      methods.particles.update(dt);
-      methods.streamlines.update(dt);
-      methods.tubes.update(dt);
-      methods.glyphs.update(dt);
-      methods.lic.update(dt);
-      methods.streamlets.update(dt);
+      if (!hasField) return;
+      for (const [id] of PANELS) methods[id].update(dt);
     },
   };
 }
