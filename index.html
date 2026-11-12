@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>風の描き方 — ベクトル場の6手法</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=M+PLUS+2:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #e6dcc8;
+        color: #161d24;
+      }
+      .viewport {
+        background: #0b1016;
+      }
+    </style>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="masthead">
+        <p class="kicker">同一のベクトル場 × 6つの可視化</p>
+        <h1>風の描き方</h1>
+        <p class="lede">
+          <a href="https://earth.nullschool.net" target="_blank" rel="noreferrer">earth.nullschool.net</a>
+          の粒子移流と、
+          <a href="https://github.com/Kitware/vtk-js" target="_blank" rel="noreferrer">vtk.js</a>
+          の流線・LIC・グリフなどを、同じ風場の上で同時に比較する。
+        </p>
+
+        <div class="toolbar">
+          <label class="field">
+            <span>風場</span>
+            <select id="preset">
+              <option value="gfs">GFS 地表風 2014-01-31</option>
+              <option value="cyclone">低気圧と偏西風</option>
+              <option value="gyre">ダブルジャイア</option>
+              <option value="saddle">鞍点とジェット</option>
+            </select>
+          </label>
+          <button type="button" id="toggle" aria-pressed="true">停止</button>
+          <label class="field">
+            <span>速さ</span>
+            <input id="speed" type="range" min="0.25" max="2.5" step="0.05" value="1" />
+          </label>
+          <label class="field">
+            <span>密度</span>
+            <input id="density" type="range" min="0.4" max="1.6" step="0.1" value="1" />
+          </label>
+          <p class="hint" id="status">読み込み中</p>
+        </div>
+      </header>
+
+      <section class="atlas" aria-label="可視化手法の比較">
+        <article class="plate">
+          <h2>粒子移流</h2>
+          <p class="en">Particle advection</p>
+          <div class="viewport" id="view-particles" data-panel="particles"></div>
+          <p class="caption">
+            earth.nullschool と同じ Canvas 2D。destination-in で尾を溶かし、速さで明るさが変わる。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>流線</h2>
+          <p class="en">Streamlines</p>
+          <div class="viewport" id="view-streamlines" data-panel="streamlines"></div>
+          <p class="caption">
+            風場を積分した流線を速さで着色。線上を彗星状のハイライトが流れる。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>流管</h2>
+          <p class="en">Streamtubes</p>
+          <div class="viewport" id="view-tubes" data-panel="tubes"></div>
+          <p class="caption">
+            速さで幅が変わる流管リボン。管内を明るい波が伝播する。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>矢印グリフ</h2>
+          <p class="en">Glyphs</p>
+          <div class="viewport" id="view-glyphs" data-panel="glyphs"></div>
+          <p class="caption">
+            矢印形の短線分。earth と同じ fade で尾を残す。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>LIC</h2>
+          <p class="en">Line integral convolution</p>
+          <div class="viewport" id="view-lic" data-panel="lic"></div>
+          <p class="caption">
+            画面解像度の IBFV。VTK 平面より細かい筋目が流れる。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>流線レット</h2>
+          <p class="en">Streamlets</p>
+          <div class="viewport" id="view-streamlets" data-panel="streamlets"></div>
+          <p class="caption">
+            積分済み流線上を、earth 式 fade の短線分が滑る。
+          </p>
+        </article>
+      </section>
+
+      <footer class="colophon">
+        <div class="legend" aria-label="速さの凡例">
+          <span>遅</span>
+          <div class="legend-bar"></div>
+          <span>速</span>
+          <span class="legend-unit" id="legend-unit">m/s</span>
+        </div>
+        <p>
+          風場の既定は
+          <a href="https://github.com/cambecc/earth" target="_blank" rel="noreferrer">cambecc/earth</a>
+          付属の GFS 1° を 2° に間引いたもの。色は速さ。パネルはカメラを共有する。
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
