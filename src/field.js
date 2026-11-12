@@ -185,15 +185,3 @@ export function createGfsField(json) {
 export function randomInDomain() {
   return [Math.random() * 358, Math.random() * 180 - 90];
 }
-
-export function seedGrid(nx = 14, ny = 8, jitter = 4) {
-  const pts = [];
-  for (let j = 0; j < ny; j += 1) {
-    for (let i = 0; i < nx; i += 1) {
-      const x = ((i + 0.5) / nx) * 358 + (Math.random() - 0.5) * jitter;
-      const y = ((j + 0.5) / ny) * 180 - 90 + (Math.random() - 0.5) * jitter;
-      pts.push(x, y, 0);
-    }
-  }
-  return pts;
-}

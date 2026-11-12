@@ -1,6 +1,6 @@
 import { createCanvasLayer, createProjector } from './canvas-layer';
 import { createParticleMethod } from './particles';
-import { computeStreamlines } from './stream';
+import { buildStreamlines } from './streamlines';
 import {
   createStreamlineMethod,
   createTubeMethod,
@@ -10,6 +10,9 @@ import { createGlyphMethod } from './glyphs';
 import { createLicMethod } from './lic';
 
 const FRAME_COLOR = 'rgb(71, 82, 97)';
+
+// 流線を共有するパネル
+const STREAM_PANELS = ['streamlines', 'tubes', 'streamlets'];
 
 const PANELS = [
   ['particles', createParticleMethod],
@@ -40,6 +43,8 @@ function createFrame(container) {
         Math.round(y1 - y0)
       );
     },
+    /** 画面の倍率 [px/度] */
+    scale: () => project.scale(),
   };
 }
 
@@ -56,19 +61,27 @@ export function createAtlas() {
   // 風場が届く前から外枠を見せておく。
   for (const frame of frames) frame.resize();
 
-  let hasField = false;
+  let field = null;
+  let density = 1;
   let lastWidth = 0;
   let lastHeight = 0;
 
+  // 流線の間隔は画面上の px で決めるので、寸法が変わったら作り直す。
+  function drawStreamPanels() {
+    const stream = buildStreamlines(field, { density, pxPerDeg: frames[0].scale() });
+    for (const id of STREAM_PANELS) methods[id].setField(field, density, stream);
+  }
+
   function resize() {
     for (const frame of frames) frame.resize();
+    drawStreamPanels();
     for (const [id] of PANELS) methods[id].resize?.();
   }
 
   // 寸法と解像度の変化が同時に来ても、描き直しは 1 フレームに 1 回にまとめる。
   let resizePending = false;
   function scheduleResize() {
-    if (!hasField || resizePending) return;
+    if (!field || resizePending) return;
     resizePending = true;
     requestAnimationFrame(() => {
       resizePending = false;
@@ -103,21 +116,19 @@ export function createAtlas() {
   return {
     methods,
     resize,
-    setField(field, density) {
+    setField(nextField, nextDensity) {
+      field = nextField;
+      density = nextDensity;
       lastWidth = atlasEl.clientWidth;
       lastHeight = atlasEl.clientHeight;
-      hasField = true;
       for (const frame of frames) frame.resize();
-      const streamLines = computeStreamlines(field);
+      drawStreamPanels();
       methods.particles.setField(field, density);
-      methods.streamlines.setField(field, density, streamLines);
-      methods.tubes.setField(field, density, streamLines);
       methods.glyphs.setField(field, density);
       methods.lic.setField(field, density);
-      methods.streamlets.setField(field, density, streamLines);
     },
     update(dt) {
-      if (!hasField) return;
+      if (!field) return;
       for (const [id] of PANELS) methods[id].update(dt);
     },
   };

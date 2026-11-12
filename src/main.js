@@ -58,9 +58,16 @@ speedEl.addEventListener('input', () => {
   speed = Number(speedEl.value);
 });
 
+// スライダーを動かしているあいだの再計算は、1 フレームに 1 回までにする。
+let densityPending = false;
 densityEl.addEventListener('input', () => {
   density = Number(densityEl.value);
-  if (field) atlas.setField(field, density);
+  if (densityPending) return;
+  densityPending = true;
+  requestAnimationFrame(() => {
+    densityPending = false;
+    if (field) atlas.setField(field, density);
+  });
 });
 
 presetEl.addEventListener('change', () => {
