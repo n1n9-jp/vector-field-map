@@ -106,6 +106,16 @@ function fillFromGfs(json) {
   return { vectors, speed, maxSpeed };
 }
 
+// 実データでは、経度 1° ぶんの距離が緯度によって変わる（cos(緯度) 倍）。
+// 地図（経度・緯度の度）の上での動きに直すため、東西成分を 1/cos(緯度) 倍する。
+// 極に近づくと際限なく大きくなるので、この緯度の値で頭打ちにする。
+export const LAT_CLAMP_DEG = 85;
+const COS_MIN = Math.cos((LAT_CLAMP_DEG * Math.PI) / 180);
+
+/**
+ * 双線形補間で風を読む。
+ * out = [地図上の東西成分, 南北成分, 風速]。風速は補正前の値で、色や長さにはこれを使う。
+ */
 export function sampleField(field, x, y, out) {
   const fx = (x - ORIGIN[0]) / SPACING[0];
   const fy = (y - ORIGIN[1]) / SPACING[1];
@@ -127,7 +137,7 @@ export function sampleField(field, x, y, out) {
   const v =
     (vectors[a + 1] * (1 - tx) + vectors[b + 1] * tx) * (1 - ty) +
     (vectors[c + 1] * (1 - tx) + vectors[d + 1] * tx) * ty;
-  out[0] = u;
+  out[0] = field.latCorrect ? u / Math.max(Math.cos((y * Math.PI) / 180), COS_MIN) : u;
   out[1] = v;
   out[2] = Math.hypot(u, v);
   return true;
@@ -144,12 +154,13 @@ export function stepRK2(field, x, y, dt, tmp) {
   return [x2, y2, tmp[2]];
 }
 
-function wrapField(kind, packed, label, unit) {
+function wrapField(kind, packed, label, unit, latCorrect = false) {
   const advectionScale = 1.15 / Math.max(packed.maxSpeed, 1e-6);
   return {
     kind,
     label,
     unit,
+    latCorrect,
     nx: NX,
     ny: NY,
     origin: ORIGIN,
@@ -179,7 +190,8 @@ export function createSyntheticField(kind) {
 }
 
 export function createGfsField(json) {
-  return wrapField('gfs', fillFromGfs(json), `GFS ${json.refTime?.slice(0, 10) ?? ''} 地表風`, 'm/s');
+  // 実データなので緯度補正を入れる。合成場は度の平面の上で定義しているので、補正しない。
+  return wrapField('gfs', fillFromGfs(json), `GFS ${json.refTime?.slice(0, 10) ?? ''} 地表風`, 'm/s', true);
 }
 
 export function randomInDomain() {

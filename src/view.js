@@ -68,7 +68,11 @@ export function createAtlas() {
 
   // 流線の間隔は画面上の px で決めるので、寸法が変わったら作り直す。
   function drawStreamPanels() {
-    const stream = buildStreamlines(field, { density, pxPerDeg: frames[0].scale() });
+    const stream = buildStreamlines(field, {
+      density,
+      pxPerDeg: frames[0].scale(),
+      latCorrect: field.latCorrect,
+    });
     for (const id of STREAM_PANELS) methods[id].setField(field, density, stream);
   }
 

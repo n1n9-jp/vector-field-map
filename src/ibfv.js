@@ -56,6 +56,7 @@ export function createIbfvMethod(container) {
   let gain = null; // 画素ごとのコントラスト（静穏域では 0）
   let image = null;
   let time = 0;
+  let typicalShift = 0; // 1 秒あたりの移動 [px] の目安（上位 5% を除いた最大）
   const tmp = [0, 0, 0];
 
   // 格子は地図の矩形にぴったり重ね、1 セルを画面の 1 px にする。行 0 は南端。
@@ -106,6 +107,16 @@ export function createIbfvMethod(container) {
     }
   }
 
+  // 緯度補正を入れると、極付近だけ地図上の動きが極端に速くなる。
+  // 移流を分ける回数は、そこを除いた大部分の画素が収まる値で決める。
+  function measureShift() {
+    const sample = [];
+    const scale = gridW / 358;
+    for (let p = 0; p < uBuf.length; p += 7) sample.push(Math.hypot(uBuf[p], vBuf[p]));
+    sample.sort((a, b) => a - b);
+    typicalShift = (sample[Math.floor(sample.length * 0.95)] || 0) * ADVECT_RATE * scale;
+  }
+
   function reset() {
     for (let p = 0; p < curr.length; p += 1) curr[p] = phase[p] < 0.5 ? 1 : 0;
     for (let k = 0; k < WARMUP_FRAMES; k += 1) advect(1 / 60);
@@ -113,7 +124,7 @@ export function createIbfvMethod(container) {
 
   /** dt ぶん進める。移動が大きいときは複数回に分ける。 */
   function advect(dt) {
-    const shift = field.maxSpeed * dt * ADVECT_RATE * (gridW / 358);
+    const shift = typicalShift * dt;
     const steps = Math.min(MAX_SUBSTEPS, Math.max(1, Math.ceil(shift / MAX_SHIFT)));
     // 分けても、dt あたりに混ぜるノイズの量は同じにする。
     const blend = 1 - (1 - BLEND) ** (1 / steps);
@@ -171,6 +182,7 @@ export function createIbfvMethod(container) {
     const gridChanged = ensureGrid();
     if (gridChanged || baked !== field) {
       bakeField();
+      measureShift();
       reset();
       baked = field;
     }

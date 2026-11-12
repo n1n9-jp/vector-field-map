@@ -1,7 +1,7 @@
 // 等間隔流線（Jobard & Lefer 1997, https://doi.org/10.1007/978-3-7091-6876-9_5）。
 // 座標は地図座標（x = 経度[度], y = 緯度[度]）。正距円筒図法で等方に表示するので、
 // 等間隔の判定もこの座標系で行う。経度は 360° 周期として扱う。
-import { NX, NY, SPACING } from './field';
+import { LAT_CLAMP_DEG, NX, NY, SPACING } from './field';
 
 const DX = SPACING[0];
 const PERIOD = 360;
@@ -17,7 +17,7 @@ export const DEFAULTS = {
   minLenRatio: 1, // 全長 < 1 * dsep の線は捨てる
   selfWindowRatio: 2, // 自線の点は弧長差 2*dsep 以内なら判定から除外
   latCorrect: false,
-  latClampDeg: 85,
+  latClampDeg: LAT_CLAMP_DEG,
   visibleMaxX: 358, // 358 < x < 360 は描かない（枠の外）
   closeLoops: true, // 閉じた軌道は輪にする
 };
