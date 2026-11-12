@@ -8,6 +8,13 @@ const BLEND = 0.08; // 新しいノイズを混ぜる割合
 const NOISE_CELL = 2; // ノイズの粒の大きさ [px]
 const NOISE_RATE = 1.4; // ノイズの明滅 [周期/秒]
 const CONTRAST = 4.5; // 表示時のコントラスト強調
+// 風がほとんどない所はノイズが流れず、その場で明滅するだけになる。
+// 最大風速に対する割合がこの範囲より下では筋を消し、範囲の中で徐々に強める。
+const CALM_LOW = 0.03;
+const CALM_HIGH = 0.2;
+// 1 回の移流で動かす距離の上限 [px]。超えるときは複数回に分け、筋が点の並びにならないようにする。
+const MAX_SHIFT = 2;
+const MAX_SUBSTEPS = 4;
 const WARMUP_FRAMES = 20;
 const ADVECT_RATE = 8; // 粒子移流（earth-animate の stepScale）と同じ
 
@@ -46,6 +53,7 @@ export function createIbfvMethod(container) {
   let uBuf = null;
   let vBuf = null;
   let tint = null; // 速さの色（r, g, b の 3 つ組）
+  let gain = null; // 画素ごとのコントラスト（静穏域では 0）
   let image = null;
   let time = 0;
   const tmp = [0, 0, 0];
@@ -56,7 +64,7 @@ export function createIbfvMethod(container) {
     const scale = project.scale();
     const w = Math.max(64, Math.round(358 * scale));
     const h = Math.max(32, Math.round(180 * scale));
-    if (w === gridW && h === gridH) return;
+    if (w === gridW && h === gridH) return false;
     gridW = w;
     gridH = h;
     const n = w * h;
@@ -66,6 +74,7 @@ export function createIbfvMethod(container) {
     uBuf = new Float32Array(n);
     vBuf = new Float32Array(n);
     tint = new Float32Array(n * 3);
+    gain = new Float32Array(n);
     offscreen.width = w;
     offscreen.height = h;
     image = offCtx.createImageData(w, h);
@@ -74,6 +83,7 @@ export function createIbfvMethod(container) {
         phase[j * w + i] = hashNoise(Math.floor(i / NOISE_CELL), Math.floor(j / NOISE_CELL), 1);
       }
     }
+    return true;
   }
 
   function bakeField() {
@@ -90,6 +100,8 @@ export function createIbfvMethod(container) {
         tint[p * 3] = r * 255;
         tint[p * 3 + 1] = g * 255;
         tint[p * 3 + 2] = b * 255;
+        const calm = Math.min(1, Math.max(0, (tmp[2] / maxSpeed - CALM_LOW) / (CALM_HIGH - CALM_LOW)));
+        gain[p] = CONTRAST * calm * calm * (3 - 2 * calm);
       }
     }
   }
@@ -99,19 +111,29 @@ export function createIbfvMethod(container) {
     for (let k = 0; k < WARMUP_FRAMES; k += 1) advect(1 / 60);
   }
 
+  /** dt ぶん進める。移動が大きいときは複数回に分ける。 */
   function advect(dt) {
+    const shift = field.maxSpeed * dt * ADVECT_RATE * (gridW / 358);
+    const steps = Math.min(MAX_SUBSTEPS, Math.max(1, Math.ceil(shift / MAX_SHIFT)));
+    // 分けても、dt あたりに混ぜるノイズの量は同じにする。
+    const blend = 1 - (1 - BLEND) ** (1 / steps);
+    for (let k = 0; k < steps; k += 1) advectStep(dt / steps, blend);
+  }
+
+  function advectStep(dt, blend) {
     time += dt;
     const kx = dt * ADVECT_RATE * (gridW / 358);
     const ky = dt * ADVECT_RATE * (gridH / 180);
     const shift = time * NOISE_RATE;
-    const n = gridW * gridH;
-    for (let p = 0; p < n; p += 1) {
-      const i = p % gridW;
-      const j = (p - i) / gridW;
-      // 時間とともに明滅するノイズ。位相が画素ごとに違うので、模様が固定されない。
-      const t = phase[p] + shift;
-      const noise = t - Math.floor(t) < 0.5 ? 1 : 0;
-      next[p] = (1 - BLEND) * sampleBuf(curr, gridW, gridH, i - uBuf[p] * kx, j - vBuf[p] * ky) + BLEND * noise;
+    const keep = 1 - blend;
+    let p = 0;
+    for (let j = 0; j < gridH; j += 1) {
+      for (let i = 0; i < gridW; i += 1, p += 1) {
+        // 時間とともに明滅するノイズ。位相が画素ごとに違うので、模様が固定されない。
+        const t = phase[p] + shift;
+        const noise = t - Math.floor(t) < 0.5 ? blend : 0;
+        next[p] = keep * sampleBuf(curr, gridW, gridH, i - uBuf[p] * kx, j - vBuf[p] * ky) + noise;
+      }
     }
     const swap = curr;
     curr = next;
@@ -126,7 +148,7 @@ export function createIbfvMethod(container) {
       const row = (gridH - 1 - j) * gridW;
       for (let i = 0; i < gridW; i += 1) {
         const p = j * gridW + i;
-        const streak = Math.min(1, Math.max(0, 0.5 + (curr[p] - 0.5) * CONTRAST));
+        const streak = Math.min(1, Math.max(0, 0.5 + (curr[p] - 0.5) * gain[p]));
         const shade = 0.16 + 0.84 * streak;
         const q = (row + i) * 4;
         data[q] = tint[p * 3] * shade;
@@ -142,25 +164,31 @@ export function createIbfvMethod(container) {
     ctx.drawImage(offscreen, x0, y0, x1 - x0, y1 - y0);
   }
 
-  function rebuild() {
-    ensureGrid();
-    bakeField();
-    reset();
+  let baked = null; // 格子に焼き込んである風場
+
+  // 風場か格子の寸法が変わったときだけ作り直す。密度の変更などでは模様を保つ。
+  function refresh() {
+    const gridChanged = ensureGrid();
+    if (gridChanged || baked !== field) {
+      bakeField();
+      reset();
+      baked = field;
+    }
     paint();
   }
 
   return {
     setField(nextField) {
       field = nextField;
-      rebuild();
+      refresh();
     },
     resize() {
       if (!field) return;
-      rebuild();
+      refresh();
     },
     update(dt) {
       if (!field) return;
-      advect(Math.min(0.033, dt));
+      advect(dt);
       paint();
     },
   };
