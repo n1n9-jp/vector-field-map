@@ -29,6 +29,7 @@ let last = performance.now();
 
 toggleEl.setAttribute('aria-pressed', playing ? 'true' : 'false');
 toggleEl.textContent = playing ? '停止' : '再生';
+atlas.setPlaying(playing);
 
 function applyField(next) {
   field = next;
@@ -50,6 +51,7 @@ function currentPreset() {
 
 toggleEl.addEventListener('click', () => {
   playing = !playing;
+  atlas.setPlaying(playing);
   toggleEl.setAttribute('aria-pressed', playing ? 'true' : 'false');
   toggleEl.textContent = playing ? '停止' : '再生';
 });

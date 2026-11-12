@@ -26,5 +26,9 @@ export function createParticleMethod(container) {
     update(dt) {
       animator.update(dt);
     },
+    settle(frames, dt) {
+      if (!hasField) return;
+      for (let k = 0; k < frames; k += 1) animator.update(dt);
+    },
   };
 }
