@@ -24,8 +24,8 @@ GitHub Pages: https://n1n9-jp.github.io/vector-field-map/（`main` へ push → 
 | 粒子移流 | `src/earth-animate.js` | 流れの速さ感と時間変化 |
 | 流線 | `src/streamlines.js`（等間隔流線）+ `src/stream-canvas.js` | 場の骨格 |
 | 流管 | `src/stream-canvas.js`（速さで幅が変わるリボン） | 速さの太さ |
-| 矢印グリフ | `src/earth-animate.js`（矢じり付きの線分） | 向き |
-| LIC | `src/lic.js`（ノイズの移流） | 全域の筋目 |
+| 矢印グリフ | `src/glyphs.js`（等間隔の固定点に置いた矢印） | 各点の向きと速さ |
+| IBFV | `src/ibfv.js`（[van Wijk 2002](https://www.win.tue.nl/~vanwijk/ibfv/)。明滅するノイズの移流） | 全域の筋目 |
 | 流線レット | `src/stream-canvas.js`（流線上の短線分） | 向きの読み取り |
 
 経度・緯度から画面への変換は `src/canvas-layer.js` の `createProjector` が担う（北が上の正距円筒図法）。

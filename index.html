@@ -34,7 +34,7 @@
         <h1>風の描き方</h1>
         <p class="lede">
           <a href="https://earth.nullschool.net" target="_blank" rel="noreferrer">earth.nullschool.net</a>
-          の粒子移流と、流線・LIC・グリフなどを、同じ風場の上で同時に比較する。
+          の粒子移流と、流線・IBFV・グリフなどを、同じ風場の上で同時に比較する。
         </p>
 
         <div class="toolbar">
@@ -90,15 +90,15 @@
           <p class="en">Glyphs</p>
           <div class="viewport" id="view-glyphs" data-panel="glyphs"></div>
           <p class="caption">
-            矢印形の短線分。earth と同じ fade で尾を残す。
+            固定点に置いた矢印。向きが風向、長さと明るさが速さを示す。
           </p>
         </article>
         <article class="plate">
-          <h2>LIC</h2>
-          <p class="en">Line integral convolution</p>
-          <div class="viewport" id="view-lic" data-panel="lic"></div>
+          <h2>IBFV</h2>
+          <p class="en">Image-based flow visualization</p>
+          <div class="viewport" id="view-ibfv" data-panel="ibfv"></div>
           <p class="caption">
-            画面解像度の IBFV。細かい筋目が流れる。
+            明滅するノイズを風で流し続ける。筋の長さと色が速さを示す。
           </p>
         </article>
         <article class="plate">
@@ -121,7 +121,7 @@
         <p>
           風場の既定は
           <a href="https://github.com/cambecc/earth" target="_blank" rel="noreferrer">cambecc/earth</a>
-          付属の GFS 1° を 2° に間引いたもの。色の凡例は LIC のもので、ほかのパネルは明るいほど速い。
+          付属の GFS 1° を 2° に間引いたもの。色の凡例は IBFV のもので、ほかのパネルは明るいほど速い。
         </p>
       </footer>
     </div>

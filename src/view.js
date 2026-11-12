@@ -7,7 +7,7 @@ import {
   createStreamletMethod,
 } from './stream-canvas';
 import { createGlyphMethod } from './glyphs';
-import { createLicMethod } from './lic';
+import { createIbfvMethod } from './ibfv';
 
 const FRAME_COLOR = 'rgb(71, 82, 97)';
 
@@ -19,7 +19,7 @@ const PANELS = [
   ['streamlines', createStreamlineMethod],
   ['tubes', createTubeMethod],
   ['glyphs', createGlyphMethod],
-  ['lic', createLicMethod],
+  ['ibfv', createIbfvMethod],
   ['streamlets', createStreamletMethod],
 ];
 
@@ -125,7 +125,7 @@ export function createAtlas() {
       drawStreamPanels();
       methods.particles.setField(field, density);
       methods.glyphs.setField(field, density);
-      methods.lic.setField(field, density);
+      methods.ibfv.setField(field, density);
     },
     update(dt) {
       if (!field) return;
