@@ -120,23 +120,3 @@ export function createEarthFieldAnimator(layer, project, options = {}) {
     },
   };
 }
-
-export function drawArrowSegment(ctx, x0, y0, x1, y1, style) {
-  const dx = x1 - x0;
-  const dy = y1 - y0;
-  const len = Math.hypot(dx, dy);
-  if (len < 0.5) return;
-  const ux = dx / len;
-  const uy = dy / len;
-  const px = -uy;
-  const py = ux;
-  const tip = Math.min(4.5, len * 0.35);
-  ctx.strokeStyle = style;
-  ctx.beginPath();
-  ctx.moveTo(x0, y0);
-  ctx.lineTo(x1, y1);
-  ctx.lineTo(x1 - ux * tip + px * (tip * 0.55), y1 - uy * tip + py * (tip * 0.55));
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x1 - ux * tip - px * (tip * 0.55), y1 - uy * tip - py * (tip * 0.55));
-  ctx.stroke();
-}
