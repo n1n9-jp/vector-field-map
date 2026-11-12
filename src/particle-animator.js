@@ -6,7 +6,7 @@ const MAX_AGE = 100;
 const LINE_WIDTH = 1.05;
 const PARTICLE_MULTIPLIER = 7;
 
-export function createEarthFieldAnimator(layer, project, options = {}) {
+export function createParticleAnimator(layer, project, options = {}) {
   const multiplier = options.multiplier ?? PARTICLE_MULTIPLIER;
   const lineWidth = options.lineWidth ?? LINE_WIDTH;
   const fadeAlpha = options.fadeAlpha ?? 0.06;

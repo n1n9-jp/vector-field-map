@@ -2,7 +2,7 @@ import { createCanvasLayer, createProjector } from './canvas-layer';
 
 const SPEED_LEVELS = 8;
 const GLOW_LEVELS = 4;
-// ハイライトや流線レットが線上を進む速さ。粒子移流（earth-animate の stepScale）と同じ値にして、
+// ハイライトや流線レットが線上を進む速さ。粒子移流（particle-animator の stepScale）と同じ値にして、
 // 見かけの速さをそろえる。
 const HEAD_RATE = 8;
 // 中央値の速さの所で、ハイライトの間隔がこの長さ [px] になるよう周期を決める。

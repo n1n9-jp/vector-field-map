@@ -1,10 +1,10 @@
 import { createCanvasLayer, createProjector } from './canvas-layer';
-import { createEarthFieldAnimator } from './earth-animate';
+import { createParticleAnimator } from './particle-animator';
 
 export function createParticleMethod(container) {
   const layer = createCanvasLayer(container, 'flow-layer');
   const project = createProjector(layer);
-  const animator = createEarthFieldAnimator(layer, project, {
+  const animator = createParticleAnimator(layer, project, {
     multiplier: 7.5,
     lineWidth: 1.05,
   });

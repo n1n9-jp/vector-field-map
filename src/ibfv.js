@@ -17,7 +17,7 @@ const MAX_SHIFT = 2;
 const MAX_SUBSTEPS = 4;
 const POLAR_LAT = 75; // これより極側は、移流を分ける回数の計算に入れない
 const WARMUP_FRAMES = 20;
-const ADVECT_RATE = 8; // 粒子移流（earth-animate の stepScale）と同じ
+const ADVECT_RATE = 8; // 粒子移流（particle-animator の stepScale）と同じ
 
 function hashNoise(i, j, seed) {
   const n = Math.sin(i * 127.1 + j * 311.7 + seed * 74.13) * 43758.5453;

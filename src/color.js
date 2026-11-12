@@ -21,7 +21,7 @@ export function speedToRgb(t) {
   ];
 }
 
-/** earth.nullschool と同じ、速さ→グレースケールの粒子色 */
+/** 速さ→グレースケールの粒子色（cambecc/earth にならった配色） */
 export function createWindColorStyles(step = 8, maxIntensity) {
   const styles = [];
   for (let j = 85; j <= 255; j += step) {
