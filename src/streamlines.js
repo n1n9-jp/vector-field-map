@@ -209,7 +209,7 @@ export function buildStreamlines(field, options = {}) {
 
   // 正規化した場での RK4（1 歩 = 弧長 h）。成功で [x, y] を out に。
   function rk4(x, y, hs, out) {
-    if (!sampleMapVelocity(field, x, y, s1, lc, cosMin) || s1[2] < vmin) return 'slow';
+    if (!sampleMapVelocity(field, x, y, s1, lc, cosMin) || s1[2] < vmin || s1[3] < 1e-9) return 'slow';
     const ax = s1[0] / s1[3];
     const ay = s1[1] / s1[3];
     if (!sampleMapVelocity(field, x + ax * hs * 0.5, y + ay * hs * 0.5, s2, lc, cosMin)) return 'domain';
@@ -488,7 +488,7 @@ function splitAtSeam(L, spd, tau, clr, vmax, out, attrs, sid) {
       if (visP && !vis) cross = dx > 0 ? [vmax, vmax, null] : [0, 0, null];
       else if (!visP && vis) cross = dx > 0 ? [PERIOD, null, 0] : [vmax, null, vmax];
       else if (visP && vis && xc < 0) cross = [0, 0, Math.min(vmax, PERIOD)];
-      else if (visP && vis && xc > PERIOD) cross = [PERIOD, Math.min(vmax, PERIOD), 0];
+      else if (visP && vis && xc >= PERIOD) cross = [PERIOD, Math.min(vmax, PERIOD), 0];
       if (cross) {
         const u = (cross[0] - xp) / dx;
         const by = L.ys[i - 1] + (L.ys[i] - L.ys[i - 1]) * u;

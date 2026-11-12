@@ -75,12 +75,13 @@ function buildLinePaths(pts, attrs, maxSpeed) {
  * 線上を風速に比例した速さで進むハイライト。
  * classOf(li, k) が返す番号ごとに線幅を変え、明るさの段とあわせて束ねて描く。
  */
-function drawHighlights(ctx, pts, attrs, time, period, classCount, classOf, styleOf) {
+function drawHighlights(ctx, pts, attrs, ids, time, period, classCount, classOf, styleOf) {
   const paths = Array.from({ length: GLOW_LEVELS * classCount }, () => null);
   for (let li = 0; li < pts.length; li += 1) {
     const p = pts[li];
     const tau = attrs[li].tau;
-    const offset = 0.618 * li;
+    // 継ぎ目で分かれた断片も、元の流線ごとに位相をそろえる。
+    const offset = 0.618 * ids[li];
     let prev = -1;
     for (let k = 0; k < tau.length - 1; k += 1) {
       const phase = fract((HEAD_RATE * time - (tau[k] + tau[k + 1]) * 0.5) / period + offset);
@@ -114,6 +115,7 @@ export function createStreamlineMethod(container) {
   const project = createProjector(fg);
   let pts = [];
   let attrs = [];
+  let ids = [];
   let maxSpeed = 1;
   let period = 1;
   let time = 0;
@@ -141,7 +143,7 @@ export function createStreamlineMethod(container) {
     const { ctx } = fg;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    drawHighlights(ctx, pts, attrs, time, period, 2, classOf, styleOf);
+    drawHighlights(ctx, pts, attrs, ids, time, period, 2, classOf, styleOf);
   }
 
   return {
@@ -150,6 +152,7 @@ export function createStreamlineMethod(container) {
       fg.resize();
       pts = projectLines(stream, project);
       attrs = stream.attrs;
+      ids = stream.streamId;
       maxSpeed = Math.max(field.maxSpeed, 1e-6);
       period = highlightPeriod(stream, project.scale());
       time = 0;
@@ -165,7 +168,8 @@ export function createStreamlineMethod(container) {
 }
 
 // 流管の幅の段（全幅 [px] の上限）。ハイライトの線幅を束ねるのに使う。
-const TUBE_WIDTH_STEPS = [1.5, 3, 5, 7.5];
+// 密度が最小のとき、幅は 0.9 × 25 px まで広がる。
+const TUBE_WIDTH_STEPS = [1.5, 3, 5, 7.5, 11, 16, 23];
 
 export function createTubeMethod(container) {
   const bg = createCanvasLayer(container, 'flow-bg');
@@ -173,6 +177,8 @@ export function createTubeMethod(container) {
   const project = createProjector(fg);
   let pts = [];
   let attrs = [];
+  let ids = [];
+  let ribbon = null; // 流管全体の形。ハイライトをこの中に収める。
   let widths = [];
   let maxSpeed = 1;
   let period = 1;
@@ -243,6 +249,8 @@ export function createTubeMethod(container) {
     bg.clear();
     const { ctx } = bg;
     const paths = buildRibbonPaths();
+    ribbon = new Path2D();
+    for (const path of paths) ribbon.addPath(path);
     ctx.save();
     clipToMap(ctx, project);
     for (let level = 0; level < SPEED_LEVELS; level += 1) {
@@ -259,9 +267,10 @@ export function createTubeMethod(container) {
     const { ctx } = fg;
     ctx.save();
     clipToMap(ctx, project);
+    ctx.clip(ribbon);
     ctx.lineCap = 'butt';
     ctx.lineJoin = 'round';
-    drawHighlights(ctx, pts, attrs, time, period, TUBE_WIDTH_STEPS.length, classOf, styleOf);
+    drawHighlights(ctx, pts, attrs, ids, time, period, TUBE_WIDTH_STEPS.length, classOf, styleOf);
     ctx.restore();
   }
 
@@ -271,6 +280,7 @@ export function createTubeMethod(container) {
       fg.resize();
       pts = projectLines(stream, project);
       attrs = stream.attrs;
+      ids = stream.streamId;
       maxSpeed = Math.max(field.maxSpeed, 1e-6);
       widths = computeWidths(stream);
       // 流線のハイライトより間隔を広くして、ゆったりした波にする。
