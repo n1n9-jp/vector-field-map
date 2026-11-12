@@ -1,4 +1,4 @@
-import { randomInDomain, sampleField, stepRK2 } from './field';
+import { randomInDomain, stepRK2 } from './field';
 import { createWindColorStyles } from './color';
 import { inView } from './canvas-layer';
 
@@ -58,22 +58,16 @@ export function createEarthFieldAnimator(layer, project, options = {}) {
     const { width, height } = layer;
     for (const p of particles) {
       if (p.age > MAX_AGE) respawn(p);
-      if (!sampleField(field, p.lon, p.lat, tmp)) {
-        p.age = MAX_AGE;
-        continue;
-      }
       const next = stepRK2(field, p.lon, p.lat, step, tmp);
       if (!next) {
+        // 場の外へ出る粒子。下の加算で MAX_AGE を超え、次のフレームで再配置される。
         p.age = MAX_AGE;
-        continue;
-      }
-      const [x0, y0] = project(p.lon, p.lat);
-      const [x1, y1] = project(next[0], next[1]);
-      if (inView(x0, y0, width, height) || inView(x1, y1, width, height)) {
-        buckets[colors.indexFor(tmp[2])].push({ x0, y0, x1, y1 });
-        p.lon = next[0];
-        p.lat = next[1];
       } else {
+        const [x0, y0] = project(p.lon, p.lat);
+        const [x1, y1] = project(next[0], next[1]);
+        if (inView(x0, y0, width, height) || inView(x1, y1, width, height)) {
+          buckets[colors.indexFor(tmp[2])].push({ x0, y0, x1, y1 });
+        }
         p.lon = next[0];
         p.lat = next[1];
       }
