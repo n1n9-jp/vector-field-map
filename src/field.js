@@ -112,6 +112,11 @@ function fillFromGfs(json) {
 export const LAT_CLAMP_DEG = 85;
 const COS_MIN = Math.cos((LAT_CLAMP_DEG * Math.PI) / 180);
 
+/** 東西成分に掛ける倍率。風を読む所はすべてこの関数を使う。 */
+export function eastwardScale(lat) {
+  return 1 / Math.max(Math.cos((lat * Math.PI) / 180), COS_MIN);
+}
+
 /**
  * 双線形補間で風を読む。
  * out = [地図上の東西成分, 南北成分, 風速]。風速は補正前の値で、色や長さにはこれを使う。
@@ -137,7 +142,7 @@ export function sampleField(field, x, y, out) {
   const v =
     (vectors[a + 1] * (1 - tx) + vectors[b + 1] * tx) * (1 - ty) +
     (vectors[c + 1] * (1 - tx) + vectors[d + 1] * tx) * ty;
-  out[0] = field.latCorrect ? u / Math.max(Math.cos((y * Math.PI) / 180), COS_MIN) : u;
+  out[0] = field.latCorrect ? u * eastwardScale(y) : u;
   out[1] = v;
   out[2] = Math.hypot(u, v);
   return true;

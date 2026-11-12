@@ -1,7 +1,7 @@
 // 等間隔流線（Jobard & Lefer 1997, https://doi.org/10.1007/978-3-7091-6876-9_5）。
 // 座標は地図座標（x = 経度[度], y = 緯度[度]）。正距円筒図法で等方に表示するので、
 // 等間隔の判定もこの座標系で行う。経度は 360° 周期として扱う。
-import { LAT_CLAMP_DEG, NX, NY, SPACING } from './field';
+import { eastwardScale, NX, NY, SPACING } from './field';
 
 const DX = SPACING[0];
 const PERIOD = 360;
@@ -17,13 +17,12 @@ export const DEFAULTS = {
   minLenRatio: 1, // 全長 < 1 * dsep の線は捨てる
   selfWindowRatio: 2, // 自線の点は弧長差 2*dsep 以内なら判定から除外
   latCorrect: false,
-  latClampDeg: LAT_CLAMP_DEG,
   visibleMaxX: 358, // 358 < x < 360 は描かない（枠の外）
   closeLoops: true, // 閉じた軌道は輪にする
 };
 
 /** 双線形補間（経度周期）。out = [ux, uy, |V|物理, |V|地図] */
-export function sampleMapVelocity(field, x, y, out, latCorrect, cosMin) {
+export function sampleMapVelocity(field, x, y, out, latCorrect) {
   if (!(y >= -90 && y <= 90)) return false;
   let xw = x % PERIOD;
   if (xw < 0) xw += PERIOD;
@@ -46,10 +45,7 @@ export function sampleMapVelocity(field, x, y, out, latCorrect, cosMin) {
   const v = (vec[a + 1] * (1 - tx) + vec[b + 1] * tx) * (1 - ty) + (vec[c + 1] * (1 - tx) + vec[d + 1] * tx) * ty;
   const s = Math.hypot(u, v);
   let mu = u;
-  if (latCorrect) {
-    const cl = Math.max(Math.cos((y * Math.PI) / 180), cosMin);
-    mu = u / cl;
-  }
+  if (latCorrect) mu = u * eastwardScale(y);
   out[0] = mu;
   out[1] = v;
   out[2] = s;
@@ -197,7 +193,6 @@ export function buildStreamlines(field, options = {}) {
   const maxArc = PERIOD * o.maxArcRatio;
   const minLen = dsep * o.minLenRatio;
   const selfWin = dsep * o.selfWindowRatio;
-  const cosMin = Math.cos((o.latClampDeg * Math.PI) / 180);
   const lc = o.latCorrect;
 
   const grid = new PointGrid(dsep);
@@ -209,18 +204,18 @@ export function buildStreamlines(field, options = {}) {
 
   // 正規化した場での RK4（1 歩 = 弧長 h）。成功で [x, y] を out に。
   function rk4(x, y, hs, out) {
-    if (!sampleMapVelocity(field, x, y, s1, lc, cosMin) || s1[2] < vmin || s1[3] < 1e-9) return 'slow';
+    if (!sampleMapVelocity(field, x, y, s1, lc) || s1[2] < vmin || s1[3] < 1e-9) return 'slow';
     const ax = s1[0] / s1[3];
     const ay = s1[1] / s1[3];
-    if (!sampleMapVelocity(field, x + ax * hs * 0.5, y + ay * hs * 0.5, s2, lc, cosMin)) return 'domain';
+    if (!sampleMapVelocity(field, x + ax * hs * 0.5, y + ay * hs * 0.5, s2, lc)) return 'domain';
     if (s2[3] < 1e-9) return 'slow';
     const bx = s2[0] / s2[3];
     const by = s2[1] / s2[3];
-    if (!sampleMapVelocity(field, x + bx * hs * 0.5, y + by * hs * 0.5, s3, lc, cosMin)) return 'domain';
+    if (!sampleMapVelocity(field, x + bx * hs * 0.5, y + by * hs * 0.5, s3, lc)) return 'domain';
     if (s3[3] < 1e-9) return 'slow';
     const cx = s3[0] / s3[3];
     const cy = s3[1] / s3[3];
-    if (!sampleMapVelocity(field, x + cx * hs, y + cy * hs, s4, lc, cosMin)) return 'domain';
+    if (!sampleMapVelocity(field, x + cx * hs, y + cy * hs, s4, lc)) return 'domain';
     if (s4[3] < 1e-9) return 'slow';
     const dx4 = s4[0] / s4[3];
     const dy4 = s4[1] / s4[3];
@@ -345,7 +340,7 @@ export function buildStreamlines(field, options = {}) {
 
   function validSeed(x, y) {
     if (y <= -90 || y >= 90) return false;
-    if (!sampleMapVelocity(field, x, y, s1, lc, cosMin) || s1[2] < vmin) return false;
+    if (!sampleMapVelocity(field, x, y, s1, lc) || s1[2] < vmin) return false;
     return !grid.hasNear(x, y, dsep);
   }
 
@@ -417,7 +412,7 @@ export function buildStreamlines(field, options = {}) {
     const msp = new Float64Array(n);
     const clr = new Float64Array(n);
     for (let i = 0; i < n; i += 1) {
-      sampleMapVelocity(field, L.xs[i], L.ys[i], s1, lc, cosMin);
+      sampleMapVelocity(field, L.xs[i], L.ys[i], s1, lc);
       spd[i] = s1[2];
       msp[i] = Math.max(s1[3], 1e-9);
       // 閉じた輪は自線を判定から外す（継ぎ目で細くならないように）
