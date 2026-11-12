@@ -14,6 +14,8 @@ const FRAME_COLOR = 'rgb(71, 82, 97)';
 // 停止中に描く静止画は、尾が伸びきるまでこの回数ぶん先に進めて作る。
 const SETTLE_FRAMES = 60;
 const SETTLE_DT = 1 / 60;
+// スライダーを動かしている途中は、反応を優先して短く済ませる。
+const QUICK_SETTLE_FRAMES = 12;
 
 // 流線を共有するパネル
 const STREAM_PANELS = ['streamlines', 'tubes', 'streamlets'];
@@ -79,9 +81,9 @@ export function createAtlas() {
   // 粒子移流と流線レットは、動かしながら尾を重ねて描く。停止中は更新が来ないので、
   // 描き直しのたびに先へ進めておき、尾の付いた静止画を見せる。
   let playing = true;
-  function settle() {
+  function settle(frameCount = SETTLE_FRAMES) {
     if (playing) return;
-    for (const [id] of PANELS) methods[id].settle?.(SETTLE_FRAMES, SETTLE_DT);
+    for (const [id] of PANELS) methods[id].settle?.(frameCount, SETTLE_DT);
   }
 
   function resize() {
@@ -129,7 +131,8 @@ export function createAtlas() {
   return {
     methods,
     resize,
-    setField(nextField, nextDensity) {
+    /** quick: 操作の途中の描き直し。停止中の静止画を短い先送りで済ませる。 */
+    setField(nextField, nextDensity, { quick = false } = {}) {
       field = nextField;
       density = nextDensity;
       lastWidth = atlasEl.clientWidth;
@@ -139,7 +142,7 @@ export function createAtlas() {
       methods.particles.setField(field, density);
       methods.glyphs.setField(field, density);
       methods.ibfv.setField(field, density);
-      settle();
+      settle(quick ? QUICK_SETTLE_FRAMES : SETTLE_FRAMES);
     },
     /** 再生中かどうかを伝える。 */
     setPlaying(value) {
