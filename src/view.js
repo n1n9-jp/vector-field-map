@@ -53,6 +53,8 @@ export function createAtlas() {
     frames.push(createFrame(el));
     methods[id] = createMethod(el);
   }
+  // 風場が届く前から外枠を見せておく。
+  for (const frame of frames) frame.resize();
 
   let hasField = false;
   let lastWidth = 0;
@@ -63,6 +65,17 @@ export function createAtlas() {
     for (const [id] of PANELS) methods[id].resize?.();
   }
 
+  // 寸法と解像度の変化が同時に来ても、描き直しは 1 フレームに 1 回にまとめる。
+  let resizePending = false;
+  function scheduleResize() {
+    if (!hasField || resizePending) return;
+    resizePending = true;
+    requestAnimationFrame(() => {
+      resizePending = false;
+      resize();
+    });
+  }
+
   // 初回の通知や寸法が変わらない通知では、描き直さない。
   new ResizeObserver(() => {
     const width = atlasEl.clientWidth;
@@ -70,8 +83,22 @@ export function createAtlas() {
     if (width === lastWidth && height === lastHeight) return;
     lastWidth = width;
     lastHeight = height;
-    if (hasField) resize();
+    scheduleResize();
   }).observe(atlasEl);
+
+  // ブラウザのズームなどで、寸法は同じまま解像度だけが変わったときも作り直す。
+  function watchPixelRatio() {
+    const query = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+    query.addEventListener(
+      'change',
+      () => {
+        watchPixelRatio();
+        scheduleResize();
+      },
+      { once: true }
+    );
+  }
+  watchPixelRatio();
 
   return {
     methods,
