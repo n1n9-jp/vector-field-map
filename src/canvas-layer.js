@@ -82,10 +82,18 @@ export function createProjector(layer) {
     originY = height / 2 + CENTER_LAT * scale;
   }
 
-  return function project(lon, lat) {
+  function project(lon, lat) {
     if (layer.width !== width || layer.height !== height) refresh();
     return [originX + lon * scale, originY - lat * scale];
+  }
+
+  /** 画面の倍率 [px/度] */
+  project.scale = () => {
+    if (layer.width !== width || layer.height !== height) refresh();
+    return scale;
   };
+
+  return project;
 }
 
 export function inView(x, y, w, h, pad = 16) {
