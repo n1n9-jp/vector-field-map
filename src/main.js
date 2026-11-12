@@ -77,7 +77,7 @@ function frame(now) {
 applyField(field);
 requestAnimationFrame(frame);
 
-fetch('/data/gfs-20140131-2deg.json')
+fetch(`${import.meta.env.BASE_URL}data/gfs-20140131-2deg.json`)
   .then((r) => r.json())
   .then((json) => {
     gfsField = createGfsField(json);

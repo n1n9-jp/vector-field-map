@@ -13,6 +13,10 @@ npm run dev
 
 ブラウザで `http://localhost:5173` を開く。各パネルはカメラを共有する。ドラッグで傾けると流管の立体が読みやすい。
 
+GitHub Pages: https://n1n9-jp.github.io/vector-field-map/（`main` へ push で自動デプロイ）
+
+ローカルで Pages と同じパス確認: `npm run preview:pages` → `http://localhost:4173/vector-field-map/`
+
 ## 手法
 
 | パネル | vtk.js | 何が見えるか |
