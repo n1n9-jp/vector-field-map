@@ -8,8 +8,6 @@ const BLEND = 0.08; // 新しいノイズを混ぜる割合
 const NOISE_CELL = 2; // ノイズの粒の大きさ [px]
 const NOISE_RATE = 1.4; // ノイズの明滅 [周期/秒]
 const CONTRAST = 4.5; // 表示時のコントラスト強調
-const STREAK_DARK = 0.38; // 筋の暗い側で、色をどこまで濃くするか
-const STREAK_LIGHT = 0.5; // 筋の明るい側で、どこまで白へ寄せるか
 // 風がほとんどない所はノイズが流れず、その場で明滅するだけになる。
 // 最大風速に対する割合がこの範囲より下では筋を消し、範囲の中で徐々に強める。
 const CALM_LOW = 0.03;
@@ -173,15 +171,12 @@ export function createIbfvMethod(container) {
       const row = (gridH - 1 - j) * gridW;
       for (let i = 0; i < gridW; i += 1) {
         const p = j * gridW + i;
-        // 筋は、速さの色を中心に明暗へ振る。平均より暗い側は色を濃くし、明るい側は白へ寄せる。
-        // 風の弱い所は gain が 0 なので、速さの色がそのまま出る。
-        const streak = Math.min(1, Math.max(-1, (curr[p] - 0.5) * gain[p] * 2));
-        const keep = streak < 0 ? 1 + STREAK_DARK * streak : 1 - STREAK_LIGHT * streak;
-        const white = streak > 0 ? 255 * STREAK_LIGHT * streak : 0;
+        const streak = Math.min(1, Math.max(0, 0.5 + (curr[p] - 0.5) * gain[p]));
+        const shade = 0.16 + 0.84 * streak;
         const q = (row + i) * 4;
-        data[q] = tint[p * 3] * keep + white;
-        data[q + 1] = tint[p * 3 + 1] * keep + white;
-        data[q + 2] = tint[p * 3 + 2] * keep + white;
+        data[q] = tint[p * 3] * shade;
+        data[q + 1] = tint[p * 3 + 1] * shade;
+        data[q + 2] = tint[p * 3 + 2] * shade;
         data[q + 3] = 255;
       }
     }

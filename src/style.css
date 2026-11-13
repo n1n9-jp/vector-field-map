@@ -1,11 +1,12 @@
 :root {
-  --paper: #ffffff;
-  --paper-2: #f4f4f2;
-  --ink: #161d24;
-  --ink-soft: #3c4752;
-  --rule: #d4d4d0;
-  --accent: #b7411e;
-  --panel: #ffffff;
+  /* ページ全体を暗い地にそろえる。--paper が地、--ink が文字の色。 */
+  --paper: #0b1016;
+  --paper-2: #121a23;
+  --ink: #e9edf1;
+  --ink-soft: #9ba7b3;
+  --rule: #2b3642;
+  --accent: #e8703f;
+  --night: #0b1016;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --sans: "M PLUS 2", "Hiragino Sans", sans-serif;
 }
@@ -94,8 +95,8 @@ button {
   font-family: var(--sans);
   font-size: 14px;
   color: var(--ink);
-  background: #ffffff;
-  border: 1px solid #9a9a96;
+  background: #151d27;
+  border: 1px solid #3a4654;
   border-radius: 2px;
   height: 34px;
   padding: 0 10px;
@@ -131,7 +132,7 @@ input[type="range"] {
   grid-template-rows: max-content max-content minmax(220px, 28vh) max-content;
   align-content: start;
   background: var(--paper);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--rule);
 }
 
 .plate h2 {
@@ -154,10 +155,10 @@ input[type="range"] {
 .viewport {
   position: relative;
   overflow: hidden;
-  background: var(--panel);
+  background: var(--night);
   min-height: 220px;
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
 }
 
 .viewport canvas {
@@ -218,15 +219,15 @@ input[type="range"] {
 .legend-bar {
   width: min(320px, 50vw);
   height: 8px;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--rule);
   background: linear-gradient(
     90deg,
-    #ffffcc 0%,
-    #c7e9b4 20%,
-    #7fcdbb 40%,
-    #41b6c4 60%,
-    #2c7fb8 80%,
-    #253494 100%
+    #14243a 0%,
+    #1d6b7a 22%,
+    #5bb89a 45%,
+    #e2c36b 66%,
+    #e07a48 84%,
+    #9b2c2c 100%
   );
 }
 

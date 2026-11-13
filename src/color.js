@@ -1,13 +1,10 @@
-// 配色。パネルは白地で、速いほど濃く描く。
-
-// IBFV の色。薄い黄から濃い紺へ進む（ColorBrewer の YlGnBu、6 段）。
 export const WIND_STOPS = [
-  [0, 1.0, 1.0, 0.8],
-  [0.2, 0.78, 0.914, 0.706],
-  [0.4, 0.498, 0.804, 0.733],
-  [0.6, 0.255, 0.714, 0.769],
-  [0.8, 0.173, 0.498, 0.722],
-  [1, 0.145, 0.204, 0.58],
+  [0, 0.078, 0.141, 0.227],
+  [0.22, 0.114, 0.42, 0.478],
+  [0.45, 0.357, 0.722, 0.604],
+  [0.66, 0.886, 0.765, 0.42],
+  [0.84, 0.878, 0.478, 0.282],
+  [1, 0.608, 0.173, 0.173],
 ];
 
 export function speedToRgb(t) {
@@ -24,31 +21,11 @@ export function speedToRgb(t) {
   ];
 }
 
-/** 速さ（0〜1）→ 灰色の濃さ。遅い所は薄く、速い所はほぼ黒。粒子移流と流線レットに使う。 */
-export function speedGray(t) {
-  return Math.round(175 - 160 * Math.min(1, Math.max(0, t)));
-}
-
-/**
- * 上に濃いハイライトを重ねるパネル（流線・流管・矢印グリフ）用の、控えめな濃さ。
- * 下地が黒に近づくとハイライトが見えなくなるので、中間の灰色で止める。
- */
-export function speedGraySoft(t) {
-  return Math.round(185 - 100 * Math.min(1, Math.max(0, t)));
-}
-
-/** ハイライトの色（r, g, b）。rgba() の中に入れて使う。 */
-export const HIGHLIGHT_RGB = '11, 16, 22';
-
-/** 風場の範囲を示す外枠の色。 */
-export const FRAME_COLOR = 'rgb(200, 204, 208)';
-
-/** 粒子の色の段。速さの小さい順に並び、後ろほど濃い。 */
-export function createWindColorStyles(count, maxIntensity) {
+/** 速さ→グレースケールの粒子色（cambecc/earth にならった配色） */
+export function createWindColorStyles(step = 8, maxIntensity) {
   const styles = [];
-  for (let i = 0; i < count; i += 1) {
-    const g = speedGray(i / (count - 1));
-    styles.push(`rgb(${g}, ${g}, ${g})`);
+  for (let j = 85; j <= 255; j += step) {
+    styles.push(`rgb(${j}, ${j}, ${j})`);
   }
   return {
     styles,
@@ -56,4 +33,32 @@ export function createWindColorStyles(count, maxIntensity) {
       return Math.floor(Math.min(Math.max(m, 0), maxIntensity) / maxIntensity * (styles.length - 1));
     },
   };
+}
+
+export function windGray(speed, maxSpeed) {
+  const t = Math.min(1, Math.max(0, speed / Math.max(maxSpeed, 1e-6)));
+  const g = Math.round(85 + t * 170);
+  return `rgb(${g}, ${g}, ${g})`;
+}
+
+export function windGrayAlpha(speed, maxSpeed, alpha) {
+  const t = Math.min(1, Math.max(0, speed / Math.max(maxSpeed, 1e-6)));
+  const g = Math.round(85 + t * 170);
+  return `rgba(${g}, ${g}, ${g}, ${alpha})`;
+}
+
+export function fract(x) {
+  return x - Math.floor(x);
+}
+
+/** 流線上を滑る彗星。頭が明るく、尾が長い。線全体は消さない。 */
+export function flowComet(s, time, pulses = 1.85) {
+  const tail = 1 - fract(s * pulses - time);
+  return tail * tail;
+}
+
+export function ageEnvelope(age, maxAge, fadeIn = 10, fadeOut = 16) {
+  const a = Math.max(0, Math.min(1, age / fadeIn));
+  const b = Math.max(0, Math.min(1, (maxAge - age) / fadeOut));
+  return a * a * (3 - 2 * a) * (b * b * (3 - 2 * b));
 }

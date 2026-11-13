@@ -12,17 +12,17 @@
     />
     <style>
       :root {
-        color-scheme: light;
+        color-scheme: dark;
       }
       html,
       body {
         margin: 0;
         min-height: 100%;
-        background: #ffffff;
-        color: #161d24;
+        background: #0b1016;
+        color: #e9edf1;
       }
       .viewport {
-        background: #ffffff;
+        background: #0b1016;
       }
     </style>
     <link rel="stylesheet" href="/src/style.css" />
@@ -66,7 +66,7 @@
           <p class="en">Particle advection</p>
           <div class="viewport" id="view-particles" data-panel="particles"></div>
           <p class="caption">
-            風に乗せた粒子の軌跡。尾は少しずつ薄れ、速いほど濃い。
+            風に乗せた粒子の軌跡。尾は少しずつ薄れ、速いほど明るい。
           </p>
         </article>
         <article class="plate">
@@ -74,7 +74,7 @@
           <p class="en">Streamlines</p>
           <div class="viewport" id="view-streamlines" data-panel="streamlines"></div>
           <p class="caption">
-            風場を積分した流線。濃いほど速い。線上を彗星状の濃い印が流れる。
+            風場を積分した流線。明るいほど速い。線上を彗星状のハイライトが流れる。
           </p>
         </article>
         <article class="plate">
@@ -82,7 +82,7 @@
           <p class="en">Streamtubes</p>
           <div class="viewport" id="view-tubes" data-panel="tubes"></div>
           <p class="caption">
-            速さで幅が変わる流管リボン。管内を濃い波が伝わる。
+            速さで幅が変わる流管リボン。管内を明るい波が伝播する。
           </p>
         </article>
         <article class="plate">
@@ -90,7 +90,7 @@
           <p class="en">Glyphs</p>
           <div class="viewport" id="view-glyphs" data-panel="glyphs"></div>
           <p class="caption">
-            固定点に置いた矢印。向きが風向、長さと濃さが速さ。濃い印が速さに応じて走り、弱風の所は点になる。
+            固定点に置いた矢印。向きが風向、長さと明るさが速さ。光が速さに応じて走り、弱風の所は点になる。
           </p>
         </article>
         <article class="plate">
@@ -121,7 +121,7 @@
         <p>
           風場の既定は
           <a href="https://github.com/cambecc/earth" target="_blank" rel="noreferrer">cambecc/earth</a>
-          付属の GFS 1° を 2° に間引いたもの。色の凡例は IBFV のもので、ほかのパネルは濃いほど速い。実データは、緯度に応じて東西方向の動きを補正している。
+          付属の GFS 1° を 2° に間引いたもの。色の凡例は IBFV のもので、ほかのパネルは明るいほど速い。実データは、緯度に応じて東西方向の動きを補正している。
         </p>
       </footer>
     </div>

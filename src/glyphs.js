@@ -1,14 +1,17 @@
 import { createCanvasLayer, createProjector } from './canvas-layer';
 import { sampleField } from './field';
-import { HIGHLIGHT_RGB, speedGraySoft } from './color';
 
 const SPEED_LEVELS = 8;
 const SPACING = 16; // 密度 1 のときの矢印の間隔 [px]
 const CALM = 0.02; // 最大風速に対するこの割合より弱い所は点で示す
 
+function grayOf(level) {
+  return Math.round(85 + ((level + 0.5) / SPEED_LEVELS) * 170);
+}
+
 /**
- * 矢印グリフ。画面上で等間隔の固定点に矢印を置き、向きで風向、長さと濃さで風速を示す。
- * 矢印は動かない。風速に応じた速さの濃い印が、各矢印の根元から先へ走る。
+ * 矢印グリフ。画面上で等間隔の固定点に矢印を置き、向きで風向、長さと明るさで風速を示す。
+ * 矢印は動かない。風速に応じた速さの光が、各矢印の根元から先へ走る。
  */
 export function createGlyphMethod(container) {
   const bg = createCanvasLayer(container, 'flow-bg');
@@ -37,7 +40,7 @@ export function createGlyphMethod(container) {
         const calm = t < CALM;
         const len = calm ? 0 : spacing * (0.3 + 0.65 * t);
         // 画面は下向きが +y なので、北向き成分の符号を反転する。
-        // 向きは地図上の動き（緯度補正ずみ）、長さと濃さは風速で決める。
+        // 向きは地図上の動き（緯度補正ずみ）、長さと明るさは風速で決める。
         const norm = Math.hypot(tmp[0], tmp[1]) || 1;
         const ux = calm ? 0 : tmp[0] / norm;
         const uy = calm ? 0 : -tmp[1] / norm;
@@ -48,7 +51,7 @@ export function createGlyphMethod(container) {
           uy,
           len,
           level: Math.min(SPEED_LEVELS - 1, Math.floor(t * SPEED_LEVELS)),
-          rate: 0.5 + 2 * t, // 濃い印が矢印を走り抜ける回数 [回/秒]
+          rate: 0.5 + 2 * t, // 光が矢印を走り抜ける回数 [回/秒]
           offset: (i * 0.37 + j * 0.61) % 1,
         });
       }
@@ -81,8 +84,8 @@ export function createGlyphMethod(container) {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     for (let level = 0; level < SPEED_LEVELS; level += 1) {
-      const g = speedGraySoft((level + 0.5) / SPEED_LEVELS);
-      ctx.strokeStyle = `rgb(${g}, ${g}, ${g})`;
+      const g = grayOf(level);
+      ctx.strokeStyle = `rgba(${g}, ${g}, ${g}, 0.85)`;
       ctx.stroke(paths[level]);
     }
   }
@@ -101,7 +104,7 @@ export function createGlyphMethod(container) {
     }
     ctx.lineWidth = 1.6;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = `rgba(${HIGHLIGHT_RGB}, 0.9)`;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.stroke(path);
   }
 
