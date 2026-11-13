@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>風の描き方 — ベクトル場の6手法</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=M+PLUS+2:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #0b1016;
+        color: #e9edf1;
+      }
+      .viewport {
+        background: #0b1016;
+      }
+    </style>
+    <script type="module" crossorigin src="/vector-field-map/assets/index-TiF4R7rP.js"></script>
+    <link rel="stylesheet" crossorigin href="/vector-field-map/assets/index-BshX3m-v.css">
+  </head>
+  <body>
+    <div class="app">
+      <header class="masthead">
+        <p class="kicker">同一のベクトル場 × 6つの可視化</p>
+        <h1>風の描き方</h1>
+        <p class="lede">
+          同じ風のベクトル場を、粒子移流・流線・流管・矢印グリフ・IBFV・流線レットの 6 つの手法で同時に描いて見比べる。
+        </p>
+
+        <div class="toolbar">
+          <label class="field">
+            <span>風場</span>
+            <select id="preset">
+              <option value="gfs">GFS 地表風 2014-01-31</option>
+              <option value="cyclone">低気圧と偏西風</option>
+              <option value="gyre">ダブルジャイア</option>
+              <option value="saddle">鞍点とジェット</option>
+              <option value="source">湧き出しと吸い込み</option>
+            </select>
+          </label>
+          <button type="button" id="toggle" aria-pressed="true">停止</button>
+          <label class="field">
+            <span>速さ</span>
+            <input id="speed" type="range" min="0.25" max="2.5" step="0.05" value="1" />
+          </label>
+          <label class="field">
+            <span>密度</span>
+            <input id="density" type="range" min="0.4" max="1.6" step="0.1" value="1" />
+          </label>
+          <p class="hint" id="status">読み込み中</p>
+        </div>
+      </header>
+
+      <section class="atlas" aria-label="可視化手法の比較">
+        <article class="plate">
+          <h2>粒子移流</h2>
+          <p class="en">Particle advection</p>
+          <div class="viewport" id="view-particles" data-panel="particles"></div>
+          <p class="caption">
+            風に乗せた粒子の軌跡。尾は少しずつ薄れ、速いほど明るい。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>流線</h2>
+          <p class="en">Streamlines</p>
+          <div class="viewport" id="view-streamlines" data-panel="streamlines"></div>
+          <p class="caption">
+            風場を積分した流線。明るいほど速い。線上を彗星状のハイライトが流れる。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>流管</h2>
+          <p class="en">Streamtubes</p>
+          <div class="viewport" id="view-tubes" data-panel="tubes"></div>
+          <p class="caption">
+            速さで幅が変わる流管リボン。管内を明るい波が伝播する。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>矢印グリフ</h2>
+          <p class="en">Glyphs</p>
+          <div class="viewport" id="view-glyphs" data-panel="glyphs"></div>
+          <p class="caption">
+            固定点に置いた矢印。向きが風向、長さと明るさが速さ。光が速さに応じて走り、弱風の所は点になる。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>IBFV</h2>
+          <p class="en">Image-based flow visualization</p>
+          <div class="viewport" id="view-ibfv" data-panel="ibfv"></div>
+          <p class="caption">
+            明滅するノイズを風で流し続ける。筋の長さと色が速さを示す。
+          </p>
+        </article>
+        <article class="plate">
+          <h2>流線レット</h2>
+          <p class="en">Streamlets</p>
+          <div class="viewport" id="view-streamlets" data-panel="streamlets"></div>
+          <p class="caption">
+            流線の上を、短い線分が風の速さで滑る。尾は少しずつ薄れる。
+          </p>
+        </article>
+      </section>
+
+      <footer class="colophon">
+        <div class="legend" aria-label="速さの凡例">
+          <span>遅</span>
+          <div class="legend-bar"></div>
+          <span>速</span>
+          <span class="legend-unit" id="legend-unit">m/s</span>
+        </div>
+        <p>
+          風場の既定は
+          <a href="https://github.com/cambecc/earth" target="_blank" rel="noreferrer">cambecc/earth</a>
+          付属の GFS 1° を 2° に間引いたもの。色の凡例は IBFV のもので、ほかのパネルは明るいほど速い。実データは、緯度に応じて東西方向の動きを補正している。
+        </p>
+      </footer>
+    </div>
+
+  </body>
+</html>
