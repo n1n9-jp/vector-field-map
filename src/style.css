@@ -1,11 +1,11 @@
 :root {
-  --paper: #e6dcc8;
-  --paper-2: #d9ceb6;
+  --paper: #ffffff;
+  --paper-2: #f4f4f2;
   --ink: #161d24;
   --ink-soft: #3c4752;
-  --rule: #b7ab93;
+  --rule: #d4d4d0;
   --accent: #b7411e;
-  --night: #0b1016;
+  --panel: #ffffff;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --sans: "M PLUS 2", "Hiragino Sans", sans-serif;
 }
@@ -94,8 +94,8 @@ button {
   font-family: var(--sans);
   font-size: 14px;
   color: var(--ink);
-  background: #f4efe4;
-  border: 1px solid #8f846f;
+  background: #ffffff;
+  border: 1px solid #9a9a96;
   border-radius: 2px;
   height: 34px;
   padding: 0 10px;
@@ -154,7 +154,7 @@ input[type="range"] {
 .viewport {
   position: relative;
   overflow: hidden;
-  background: var(--night);
+  background: var(--panel);
   min-height: 220px;
   border-top: 1px solid var(--ink);
   border-bottom: 1px solid var(--ink);
@@ -221,12 +221,12 @@ input[type="range"] {
   border: 1px solid var(--ink);
   background: linear-gradient(
     90deg,
-    #14243a 0%,
-    #1d6b7a 22%,
-    #5bb89a 45%,
-    #e2c36b 66%,
-    #e07a48 84%,
-    #9b2c2c 100%
+    #ffffcc 0%,
+    #c7e9b4 20%,
+    #7fcdbb 40%,
+    #41b6c4 60%,
+    #2c7fb8 80%,
+    #253494 100%
   );
 }
 

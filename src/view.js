@@ -1,4 +1,5 @@
 import { createCanvasLayer, createProjector } from './canvas-layer';
+import { FRAME_COLOR } from './color';
 import { createParticleMethod } from './particles';
 import { buildStreamlines } from './streamlines';
 import {
@@ -8,8 +9,6 @@ import {
 } from './stream-canvas';
 import { createGlyphMethod } from './glyphs';
 import { createIbfvMethod } from './ibfv';
-
-const FRAME_COLOR = 'rgb(71, 82, 97)';
 
 // 停止中に描く静止画は、尾が伸びきるまでこの回数ぶん先に進めて作る。
 const SETTLE_FRAMES = 60;

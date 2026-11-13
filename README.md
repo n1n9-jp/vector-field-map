@@ -52,4 +52,5 @@ GitHub Pages: https://n1n9-jp.github.io/vector-field-map/（`main` へ push → 
 - 粒子移流：粒子を流して尾を薄くしていく描き方は [earth.nullschool.net](https://earth.nullschool.net) / cambecc/earth を参考にした。
 - 流線：Jobard & Lefer (1997) [Creating Evenly-Spaced Streamlines of Arbitrary Density](https://doi.org/10.1007/978-3-7091-6876-9_5)
 - ダブルジャイア：Shadden, Lekien & Marsden (2005) の試験用の流れ。式は [LCS tutorial](https://shaddenlab.berkeley.edu/uploads/LCS-tutorial/examples.html) にある。
+- IBFV の配色：[ColorBrewer](https://colorbrewer2.org/#type=sequential&scheme=YlGnBu&n=6) の YlGnBu（6 段）。
 - IBFV：van Wijk (2002) [Image Based Flow Visualization](https://www.win.tue.nl/~vanwijk/ibfv/)

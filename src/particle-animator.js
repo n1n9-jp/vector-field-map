@@ -104,7 +104,7 @@ export function createParticleAnimator(layer, project, options = {}) {
     setField(next, density = 1) {
       field = next;
       intensity = Math.max(next.maxSpeed * 0.82, 1);
-      colors = createWindColorStyles(8, intensity);
+      colors = createWindColorStyles(22, intensity);
       buckets = colors.styles.map(() => []);
       seed(true, density);
       layer.clear();

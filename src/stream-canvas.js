@@ -1,4 +1,5 @@
 import { createCanvasLayer, createProjector } from './canvas-layer';
+import { HIGHLIGHT_RGB, speedGray, speedGraySoft } from './color';
 
 const SPEED_LEVELS = 8;
 const GLOW_LEVELS = 4;
@@ -12,8 +13,9 @@ function fract(x) {
   return x - Math.floor(x);
 }
 
-function grayOf(level) {
-  return Math.round(85 + ((level + 0.5) / SPEED_LEVELS) * 170);
+// 速さの段の中央の値（0〜1）
+function levelSpeed(level) {
+  return (level + 0.5) / SPEED_LEVELS;
 }
 
 function speedLevel(speed, maxSpeed) {
@@ -125,7 +127,7 @@ function drawHighlights(ctx, pts, attrs, ids, time, periods, classCount, classOf
     const glow = (Math.floor(key / classCount) + 1) / GLOW_LEVELS;
     const { width, alpha } = styleOf(key % classCount);
     ctx.lineWidth = width;
-    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * glow})`;
+    ctx.strokeStyle = `rgba(${HIGHLIGHT_RGB}, ${alpha * glow})`;
     ctx.stroke(paths[key]);
   }
 }
@@ -141,9 +143,9 @@ export function createStreamlineMethod(container) {
   let periods = [];
   let time = 0;
 
-  // 速さが半分以上の区間は太く明るくする。
+  // 速さが半分以上の区間は太く濃くする。
   const classOf = (li, k) => (attrs[li].speed[k] / maxSpeed >= 0.5 ? 1 : 0);
-  const styleOf = (cls) => (cls === 1 ? { width: 2.6, alpha: 0.76 } : { width: 1.6, alpha: 0.49 });
+  const styleOf = (cls) => (cls === 1 ? { width: 2.6, alpha: 0.9 } : { width: 1.8, alpha: 0.65 });
 
   function drawBackground() {
     bg.clear();
@@ -153,8 +155,8 @@ export function createStreamlineMethod(container) {
     ctx.lineJoin = 'round';
     ctx.lineWidth = 1.45;
     for (let level = 0; level < SPEED_LEVELS; level += 1) {
-      const g = grayOf(level);
-      ctx.strokeStyle = `rgba(${g}, ${g}, ${g}, 0.9)`;
+      const g = speedGraySoft(levelSpeed(level));
+      ctx.strokeStyle = `rgb(${g}, ${g}, ${g})`;
       ctx.stroke(paths[level]);
     }
   }
@@ -211,7 +213,7 @@ export function createTubeMethod(container) {
     while (cls < TUBE_WIDTH_STEPS.length - 1 && w > TUBE_WIDTH_STEPS[cls]) cls += 1;
     return cls;
   };
-  const styleOf = (cls) => ({ width: TUBE_WIDTH_STEPS[cls], alpha: 0.38 });
+  const styleOf = (cls) => ({ width: TUBE_WIDTH_STEPS[cls], alpha: 0.5 });
 
   /** 速さで決まる全幅。隣の線までのすき間（clear）を超えない。 */
   function computeWidths(stream) {
@@ -275,9 +277,8 @@ export function createTubeMethod(container) {
     ctx.save();
     clipToMap(ctx, project);
     for (let level = 0; level < SPEED_LEVELS; level += 1) {
-      const g = grayOf(level);
-      const t = (level + 0.5) / SPEED_LEVELS;
-      ctx.fillStyle = `rgba(${g}, ${g}, ${g}, ${0.3 + 0.4 * t})`;
+      const g = speedGraySoft(levelSpeed(level));
+      ctx.fillStyle = `rgb(${g}, ${g}, ${g})`;
       ctx.fill(paths[level]);
     }
     ctx.restore();
@@ -418,7 +419,7 @@ export function createStreamletMethod(container) {
     layer.fade(0.06);
     for (let level = 0; level < SPEED_LEVELS; level += 1) {
       if (!paths[level]) continue;
-      const g = grayOf(level);
+      const g = speedGray(levelSpeed(level));
       ctx.strokeStyle = `rgb(${g}, ${g}, ${g})`;
       ctx.stroke(paths[level]);
     }
